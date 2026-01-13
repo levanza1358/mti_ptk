@@ -4,48 +4,54 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - 'docs/**'
-      - '.github/workflows/deploy.yml'
+      - master
   workflow_dispatch:
 
+# Permissions required for GitHub Pages deployment
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+# Ensure only one deployment runs at a time
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
+          channel: stable
+          cache: true
 
-      - name: Enable Flutter web
-        run: flutter config --enable-web
-
-      - name: Install dependencies
+      - name: Flutter pub get
         run: flutter pub get
 
+      - name: Analyze Flutter code
+        run: flutter analyze --no-fatal-infos
+
       - name: Build Flutter web
-        run: flutter build web --release --base-href="/mti_ptk/"
+        run: flutter build web --release --base-href "/mti_ptk/"
 
-      - name: Clean old docs
-        run: rm -rf docs
-
-      - name: Copy build to docs
-        run: cp -r build/web docs
-
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: docs
-          branch: gh-pages
-          clean: true
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
