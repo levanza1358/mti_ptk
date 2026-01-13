@@ -86,7 +86,7 @@ class MyApp extends StatelessWidget {
           onErrorContainer: Colors.red.shade100,
           surface: Color(0xFF0F1419), // Darker surface
           onSurface: Colors.white,
-          surfaceVariant: Color(0xFF1C1B1F),
+          surfaceContainerHighest: Color(0xFF1C1B1F),
           onSurfaceVariant: Colors.white.withValues(alpha: 0.8),
           outline: Colors.white.withValues(alpha: 0.2),
           outlineVariant: Colors.white.withValues(alpha: 0.1),
@@ -118,21 +118,31 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/cuti', page: () => const CutiPage()),
         GetPage(name: '/insentif', page: () => const InsentifPage()),
         GetPage(name: '/surat-keluar', page: () => const SuratKeluarPage()),
-        GetPage(name: '/group-management', page: () => const GroupManagementPage()),
-        GetPage(name: '/data-management', page: () => const DataManagementPage()),
+        GetPage(
+            name: '/group-management', page: () => const GroupManagementPage()),
+        GetPage(
+            name: '/data-management', page: () => const DataManagementPage()),
         GetPage(name: '/tambah-pegawai', page: () => const TambahPegawaiPage()),
         GetPage(name: '/edit-pegawai', page: () => const EditPegawaiPage()),
         GetPage(name: '/tambah-group', page: () => const TambahGroupPage()),
         GetPage(name: '/edit-group', page: () => const EditGroupPage()),
         GetPage(name: '/tambah-jabatan', page: () => const TambahJabatanPage()),
         GetPage(name: '/edit-jabatan', page: () => const EditJabatanPage()),
-        GetPage(name: '/tambah-supervisor', page: () => const TambahSupervisorPage()),
-        GetPage(name: '/edit-supervisor', page: () => const EditSupervisorPage()),
+        GetPage(
+            name: '/tambah-supervisor',
+            page: () => const TambahSupervisorPage()),
+        GetPage(
+            name: '/edit-supervisor', page: () => const EditSupervisorPage()),
         GetPage(name: '/eksepsi', page: () => const EksepsiPage()),
         GetPage(name: '/kalender-cuti', page: () => const KalenderCutiPage()),
-        GetPage(name: '/semua-data-eksepsi', page: () => const SemuaDataEksepsiPage()),
-        GetPage(name: '/semua-data-cuti', page: () => const SemuaDataCutiPage()),
-        GetPage(name: '/semua-data-insentif', page: () => const SemuaDataInsentifPage()),
+        GetPage(
+            name: '/semua-data-eksepsi',
+            page: () => const SemuaDataEksepsiPage()),
+        GetPage(
+            name: '/semua-data-cuti', page: () => const SemuaDataCutiPage()),
+        GetPage(
+            name: '/semua-data-insentif',
+            page: () => const SemuaDataInsentifPage()),
         GetPage(name: '/settings', page: () => const SettingsPage()),
       ],
     );

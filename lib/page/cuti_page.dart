@@ -147,7 +147,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                     initialValue: _selectedLeaveType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                     items: ['Cuti Tahunan', 'Cuti Alasan Penting']
                         .map((type) => DropdownMenuItem(
@@ -237,7 +238,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                   children: [
                     const Text(
                       'Alasan Cuti',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -304,7 +306,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                 tooltip: 'Tahun sebelumnya',
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -389,7 +392,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.blue.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
@@ -418,14 +422,17 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                           if (leave['tanggal_pengajuan'] != null) ...[
                             Text(
                               'Tanggal Pengajuan: ${DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(DateTime.parse(leave['tanggal_pengajuan']))}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                             ),
                           ],
-                          if (leave['alasan_cuti'] != null && leave['alasan_cuti'].isNotEmpty) ...[
+                          if (leave['alasan_cuti'] != null &&
+                              leave['alasan_cuti'].isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
                               'Alasan: ${leave['alasan_cuti']}',
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -459,7 +466,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       return;
     }
 
-    if (_selectedLeaveType == 'Cuti Tahunan' && _reasonController.text.isEmpty) {
+    if (_selectedLeaveType == 'Cuti Tahunan' &&
+        _reasonController.text.isEmpty) {
       Get.snackbar('Error', 'Alasan cuti tidak boleh kosong');
       return;
     }
@@ -477,53 +485,39 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       final LoginController loginController = Get.find<LoginController>();
       final currentUser = loginController.currentUser.value;
 
-      print('DEBUG: Current user: $currentUser');
-      print('DEBUG: Current user ID: ${currentUser?['id']}');
-
       if (currentUser == null) {
-        print('DEBUG: No current user found');
         return [];
       }
 
       if (currentUser['id'] == null) {
-        print('DEBUG: Current user has no ID');
         return [];
       }
 
-      print('DEBUG: Fetching cuti data for user ID: ${currentUser['id']}');
-
       // First, let's check if there are any records at all
-      final allRecords = await SupabaseService.instance.client
+      await SupabaseService.instance.client
           .from('cuti')
           .select('count')
           .limit(1);
-      print('DEBUG: Total cuti records in database: ${allRecords.length}');
 
       // Check records for this user
       final userRecords = await SupabaseService.instance.client
           .from('cuti')
           .select('id, nama, users_id')
           .eq('users_id', currentUser['id']);
-      print('DEBUG: Cuti records for current user: ${userRecords.length}');
-      if (userRecords.isNotEmpty) {
-        print('DEBUG: Sample user record: ${userRecords.first}');
-      }
+      if (userRecords.isNotEmpty) {}
 
       final response = await SupabaseService.instance.client
           .from('cuti')
-          .select('nama, alasan_cuti, lama_cuti, tanggal_pengajuan, users_id, jenis_cuti, sisa_cuti')
+          .select(
+              'nama, alasan_cuti, lama_cuti, tanggal_pengajuan, users_id, jenis_cuti, sisa_cuti')
           .eq('users_id', currentUser['id'])
           .order('tanggal_pengajuan', ascending: false)
           .limit(100);
 
-      print('DEBUG: Query result count: ${response.length}');
-      if (response.isNotEmpty) {
-        print('DEBUG: First record: ${response.first}');
-      }
+      if (response.isNotEmpty) {}
 
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('DEBUG: Error fetching leave requests: $e');
       throw 'Failed to fetch leave requests: $e';
     }
   }
@@ -534,7 +528,6 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       final currentUser = loginController.currentUser.value;
 
       if (currentUser == null || currentUser['id'] == null) {
-        print('DEBUG: Cannot load leave balance - no user');
         return;
       }
 
@@ -544,16 +537,12 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
           .eq('id', currentUser['id'])
           .single();
 
-      if (response != null && response['sisa_cuti'] != null) {
+      if (response['sisa_cuti'] != null) {
         setState(() {
           _sisaCuti = response['sisa_cuti'] as int;
         });
-        print('DEBUG: User leave balance loaded: $_sisaCuti days');
-      } else {
-        print('DEBUG: No leave balance data found for user');
-      }
+      } else {}
     } catch (e) {
-      print('DEBUG: Error loading user leave balance: $e');
       // Keep default value of 0
     }
   }
