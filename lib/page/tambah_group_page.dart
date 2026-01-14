@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -48,7 +50,6 @@ class _TambahGroupPageState extends State<TambahGroupPage> {
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -76,7 +77,7 @@ class _TambahGroupPageState extends State<TambahGroupPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.1),
+                          color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
@@ -105,10 +106,12 @@ class _TambahGroupPageState extends State<TambahGroupPage> {
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Tambah Grup',
-                                  style: TextStyle(fontSize: 16, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.white),
                                 ),
                         ),
                       ),

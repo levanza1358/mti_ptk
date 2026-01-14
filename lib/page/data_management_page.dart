@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -151,15 +153,18 @@ class DataManagementPage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard('Pegawai', '0', Icons.people, Colors.blue),
+                          child: _buildStatCard(
+                              'Pegawai', '0', Icons.people, Colors.blue),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _buildStatCard('Grup', '0', Icons.group, Colors.green),
+                          child: _buildStatCard(
+                              'Grup', '0', Icons.group, Colors.green),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _buildStatCard('Jabatan', '0', Icons.work, Colors.orange),
+                          child: _buildStatCard(
+                              'Jabatan', '0', Icons.work, Colors.orange),
                         ),
                       ],
                     ),
@@ -167,7 +172,8 @@ class DataManagementPage extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildStatCard('Supervisor', '0', Icons.supervisor_account, Colors.purple),
+                          child: _buildStatCard('Supervisor', '0',
+                              Icons.supervisor_account, Colors.purple),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -205,7 +211,7 @@ class DataManagementPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -228,7 +234,8 @@ class DataManagementPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard(String title, IconData icon, Color bgColor, VoidCallback onTap) {
+  Widget _buildActionCard(
+      String title, IconData icon, Color bgColor, VoidCallback onTap) {
     return Card(
       elevation: 2,
       child: InkWell(
@@ -264,11 +271,12 @@ class DataManagementPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(String label, String count, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String label, String count, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -287,7 +295,7 @@ class DataManagementPage extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: color.withValues(alpha: 0.7),
+              color: color.withOpacity(0.7),
             ),
           ),
         ],

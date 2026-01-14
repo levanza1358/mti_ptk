@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -137,7 +139,7 @@ class _GroupManagementPageState extends State<GroupManagementPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.1),
+                      color: Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -213,7 +215,8 @@ class _GroupManagementPageState extends State<GroupManagementPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Konfirmasi Hapus'),
-        content: Text('Apakah Anda yakin ingin menghapus grup "${group['nama']}"?'),
+        content:
+            Text('Apakah Anda yakin ingin menghapus grup "${group['nama']}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),

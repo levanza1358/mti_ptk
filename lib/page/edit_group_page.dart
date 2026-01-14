@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -113,7 +115,8 @@ class _EditGroupPageState extends State<EditGroupPage> {
                     children: [
                       const Text(
                         'Pilih Grup',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -172,7 +175,7 @@ class _EditGroupPageState extends State<EditGroupPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
+                            color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -207,7 +210,8 @@ class _EditGroupPageState extends State<EditGroupPage> {
                                   backgroundColor: Colors.green,
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white)
                                     : const Text(
                                         'Simpan Perubahan',
                                         style: TextStyle(color: Colors.white),
@@ -240,8 +244,8 @@ class _EditGroupPageState extends State<EditGroupPage> {
     try {
       await SupabaseService.instance.client
           .from('group')
-          .update({'nama': _groupNameController.text.trim()})
-          .eq('id', _selectedGroupId!);
+          .update({'nama': _groupNameController.text.trim()}).eq(
+              'id', _selectedGroupId!);
 
       Get.snackbar(
         'Berhasil',

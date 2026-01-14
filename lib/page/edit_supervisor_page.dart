@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -61,7 +63,8 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
       return;
     }
 
-    final supervisor = _supervisors.firstWhere((s) => s['id'].toString() == supervisorId);
+    final supervisor =
+        _supervisors.firstWhere((s) => s['id'].toString() == supervisorId);
     setState(() {
       _selectedSupervisorId = supervisorId;
       _supervisorNameController.text = supervisor['nama'] ?? '';
@@ -125,7 +128,8 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                     children: [
                       const Text(
                         'Pilih Supervisor',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -138,7 +142,8 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                         items: _supervisors.map((supervisor) {
                           return DropdownMenuItem<String>(
                             value: supervisor['id'].toString(),
-                            child: Text('${supervisor['nama']} - ${supervisor['departemen']}'),
+                            child: Text(
+                                '${supervisor['nama']} - ${supervisor['departemen']}'),
                           );
                         }).toList(),
                         onChanged: _onSupervisorSelected,
@@ -241,7 +246,7 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
+                            color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -277,7 +282,8 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                                   backgroundColor: Colors.purple,
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white)
                                     : const Text(
                                         'Simpan Perubahan',
                                         style: TextStyle(color: Colors.white),
@@ -308,15 +314,12 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
     });
 
     try {
-      await SupabaseService.instance.client
-          .from('supervisor')
-          .update({
-            'nama': _supervisorNameController.text.trim(),
-            'email': _supervisorEmailController.text.trim(),
-            'telepon': _supervisorPhoneController.text.trim(),
-            'departemen': _supervisorDepartmentController.text.trim(),
-          })
-          .eq('id', _selectedSupervisorId!);
+      await SupabaseService.instance.client.from('supervisor').update({
+        'nama': _supervisorNameController.text.trim(),
+        'email': _supervisorEmailController.text.trim(),
+        'telepon': _supervisorPhoneController.text.trim(),
+        'departemen': _supervisorDepartmentController.text.trim(),
+      }).eq('id', _selectedSupervisorId!);
 
       Get.snackbar(
         'Berhasil',

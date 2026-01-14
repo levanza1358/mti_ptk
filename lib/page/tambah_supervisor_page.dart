@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -61,7 +63,8 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
       return;
     }
 
-    final employee = _employees.firstWhere((emp) => emp['id'].toString() == employeeId);
+    final employee =
+        _employees.firstWhere((emp) => emp['id'].toString() == employeeId);
     setState(() {
       _selectedEmployeeId = employeeId;
       _supervisorNameController.text = employee['name'] ?? '';
@@ -122,7 +125,8 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
                     children: [
                       const Text(
                         'Pilih Pegawai',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -135,7 +139,8 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
                         items: _employees.map((employee) {
                           return DropdownMenuItem<String>(
                             value: employee['id'].toString(),
-                            child: Text('${employee['name']} (NRP: ${employee['nrp']})'),
+                            child: Text(
+                                '${employee['name']} (NRP: ${employee['nrp']})'),
                           );
                         }).toList(),
                         onChanged: _onEmployeeSelected,
@@ -239,7 +244,7 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.1),
+                            color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -275,7 +280,8 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
                                   backgroundColor: Colors.purple,
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white)
                                     : const Text(
                                         'Tambah Supervisor',
                                         style: TextStyle(color: Colors.white),

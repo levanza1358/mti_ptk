@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -60,7 +62,6 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -91,7 +92,8 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                       // Permissions Section
                       const Text(
                         'Permissions',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
 
@@ -102,22 +104,26 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                           _buildCheckbox(
                             'Bisa approve cuti',
                             _canApproveLeave,
-                            (value) => setState(() => _canApproveLeave = value ?? false),
+                            (value) => setState(
+                                () => _canApproveLeave = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa approve eksepsi',
                             _canApproveException,
-                            (value) => setState(() => _canApproveException = value ?? false),
+                            (value) => setState(
+                                () => _canApproveException = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa lihat semua cuti',
                             _canViewAllLeave,
-                            (value) => setState(() => _canViewAllLeave = value ?? false),
+                            (value) => setState(
+                                () => _canViewAllLeave = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa lihat semua eksepsi',
                             _canViewAllException,
-                            (value) => setState(() => _canViewAllException = value ?? false),
+                            (value) => setState(
+                                () => _canViewAllException = value ?? false),
                           ),
                         ],
                       ),
@@ -131,12 +137,14 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                           _buildCheckbox(
                             'Bisa kelola insentif',
                             _canManageIncentives,
-                            (value) => setState(() => _canManageIncentives = value ?? false),
+                            (value) => setState(
+                                () => _canManageIncentives = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa lihat semua insentif',
                             _canViewAllIncentives,
-                            (value) => setState(() => _canViewAllIncentives = value ?? false),
+                            (value) => setState(
+                                () => _canViewAllIncentives = value ?? false),
                           ),
                         ],
                       ),
@@ -150,17 +158,20 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                           _buildCheckbox(
                             'Bisa kelola ATK',
                             _canManageATK,
-                            (value) => setState(() => _canManageATK = value ?? false),
+                            (value) =>
+                                setState(() => _canManageATK = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa kelola surat keluar',
                             _canManageOutgoingLetters,
-                            (value) => setState(() => _canManageOutgoingLetters = value ?? false),
+                            (value) => setState(() =>
+                                _canManageOutgoingLetters = value ?? false),
                           ),
                           _buildCheckbox(
                             'Bisa kelola data sistem',
                             _canManageData,
-                            (value) => setState(() => _canManageData = value ?? false),
+                            (value) =>
+                                setState(() => _canManageData = value ?? false),
                           ),
                         ],
                       ),
@@ -180,10 +191,12 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Tambah Jabatan',
-                                  style: TextStyle(fontSize: 16, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.white),
                                 ),
                         ),
                       ),
@@ -201,8 +214,8 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
   Widget _buildPermissionSection(String title, List<Widget> checkboxes) {
     return Container(
       padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.1),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -219,7 +232,8 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
     );
   }
 
-  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+  Widget _buildCheckbox(
+      String label, bool value, ValueChanged<bool?> onChanged) {
     return CheckboxListTile(
       title: Text(label),
       value: value,

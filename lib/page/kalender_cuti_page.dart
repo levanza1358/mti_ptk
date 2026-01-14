@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -189,7 +191,7 @@ class _KalenderCutiPageState extends State<KalenderCutiPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.1),
+                          color: Colors.red.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.red),
                         ),
@@ -228,7 +230,7 @@ class _KalenderCutiPageState extends State<KalenderCutiPage> {
                     Icon(
                       Icons.calendar_today,
                       size: 64,
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: Colors.grey.withOpacity(0.5),
                     ),
                     const SizedBox(height: 16),
                     const Text(

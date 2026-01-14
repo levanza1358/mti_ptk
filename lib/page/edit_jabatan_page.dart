@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
@@ -45,7 +47,8 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     try {
       final response = await SupabaseService.instance.client
           .from('jabatan')
-          .select('id, nama, permissionCuti, permissionEksepsi, permissionAllCuti, permissionAllEksepsi, permissionInsentif, permissionAtk, permissionAllInsentif, permissionSuratKeluar, permissionManagementData')
+          .select(
+              'id, nama, permissionCuti, permissionEksepsi, permissionAllCuti, permissionAllEksepsi, permissionInsentif, permissionAtk, permissionAllInsentif, permissionSuratKeluar, permissionManagementData')
           .order('nama');
 
       setState(() {
@@ -142,7 +145,8 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                     children: [
                       const Text(
                         'Pilih Jabatan',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -204,7 +208,8 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                         // Permissions Section
                         const Text(
                           'Permissions',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
 
@@ -215,22 +220,26 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                             _buildCheckbox(
                               'Bisa approve cuti',
                               _canApproveLeave,
-                              (value) => setState(() => _canApproveLeave = value ?? false),
+                              (value) => setState(
+                                  () => _canApproveLeave = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa approve eksepsi',
                               _canApproveException,
-                              (value) => setState(() => _canApproveException = value ?? false),
+                              (value) => setState(
+                                  () => _canApproveException = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa lihat semua cuti',
                               _canViewAllLeave,
-                              (value) => setState(() => _canViewAllLeave = value ?? false),
+                              (value) => setState(
+                                  () => _canViewAllLeave = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa lihat semua eksepsi',
                               _canViewAllException,
-                              (value) => setState(() => _canViewAllException = value ?? false),
+                              (value) => setState(
+                                  () => _canViewAllException = value ?? false),
                             ),
                           ],
                         ),
@@ -244,12 +253,14 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                             _buildCheckbox(
                               'Bisa kelola insentif',
                               _canManageIncentives,
-                              (value) => setState(() => _canManageIncentives = value ?? false),
+                              (value) => setState(
+                                  () => _canManageIncentives = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa lihat semua insentif',
                               _canViewAllIncentives,
-                              (value) => setState(() => _canViewAllIncentives = value ?? false),
+                              (value) => setState(
+                                  () => _canViewAllIncentives = value ?? false),
                             ),
                           ],
                         ),
@@ -263,17 +274,20 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                             _buildCheckbox(
                               'Bisa kelola ATK',
                               _canManageATK,
-                              (value) => setState(() => _canManageATK = value ?? false),
+                              (value) => setState(
+                                  () => _canManageATK = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa kelola surat keluar',
                               _canManageOutgoingLetters,
-                              (value) => setState(() => _canManageOutgoingLetters = value ?? false),
+                              (value) => setState(() =>
+                                  _canManageOutgoingLetters = value ?? false),
                             ),
                             _buildCheckbox(
                               'Bisa kelola data sistem',
                               _canManageData,
-                              (value) => setState(() => _canManageData = value ?? false),
+                              (value) => setState(
+                                  () => _canManageData = value ?? false),
                             ),
                           ],
                         ),
@@ -284,7 +298,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
+                            color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Row(
@@ -320,7 +334,8 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                                   backgroundColor: Colors.orange,
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white)
                                     : const Text(
                                         'Simpan Perubahan',
                                         style: TextStyle(color: Colors.white),
@@ -345,7 +360,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.1),
+        color: Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -362,7 +377,8 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     );
   }
 
-  Widget _buildCheckbox(String label, bool value, ValueChanged<bool?> onChanged) {
+  Widget _buildCheckbox(
+      String label, bool value, ValueChanged<bool?> onChanged) {
     return CheckboxListTile(
       title: Text(label),
       value: value,
@@ -382,21 +398,18 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     });
 
     try {
-      await SupabaseService.instance.client
-          .from('jabatan')
-          .update({
-            'nama': _jabatanNameController.text.trim(),
-            'permissionCuti': _canApproveLeave,
-            'permissionEksepsi': _canApproveException,
-            'permissionAllCuti': _canViewAllLeave,
-            'permissionAllEksepsi': _canViewAllException,
-            'permissionInsentif': _canManageIncentives,
-            'permissionAtk': _canManageATK,
-            'permissionAllInsentif': _canViewAllIncentives,
-            'permissionSuratKeluar': _canManageOutgoingLetters,
-            'permissionManagementData': _canManageData,
-          })
-          .eq('id', _selectedJabatanId!);
+      await SupabaseService.instance.client.from('jabatan').update({
+        'nama': _jabatanNameController.text.trim(),
+        'permissionCuti': _canApproveLeave,
+        'permissionEksepsi': _canApproveException,
+        'permissionAllCuti': _canViewAllLeave,
+        'permissionAllEksepsi': _canViewAllException,
+        'permissionInsentif': _canManageIncentives,
+        'permissionAtk': _canManageATK,
+        'permissionAllInsentif': _canViewAllIncentives,
+        'permissionSuratKeluar': _canManageOutgoingLetters,
+        'permissionManagementData': _canManageData,
+      }).eq('id', _selectedJabatanId!);
 
       Get.snackbar(
         'Berhasil',

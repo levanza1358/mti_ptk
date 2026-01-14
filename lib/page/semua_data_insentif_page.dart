@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +12,8 @@ class SemuaDataInsentifPage extends StatefulWidget {
   State<SemuaDataInsentifPage> createState() => _SemuaDataInsentifPageState();
 }
 
-class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with TickerProviderStateMixin {
+class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage>
+    with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   late TabController _tabController;
   String _searchQuery = '';
@@ -81,8 +84,21 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                     const SizedBox(width: 8),
                     DropdownButton<String>(
                       value: _typeFilter,
-                      items: ['Semua', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                              'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+                      items: [
+                        'Semua',
+                        'Januari',
+                        'Februari',
+                        'Maret',
+                        'April',
+                        'Mei',
+                        'Juni',
+                        'Juli',
+                        'Agustus',
+                        'September',
+                        'Oktober',
+                        'November',
+                        'Desember'
+                      ]
                           .map((month) => DropdownMenuItem(
                                 value: month,
                                 child: Text(month),
@@ -169,9 +185,10 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
+                            color: Colors.orange.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.orange),
                           ),
@@ -188,7 +205,8 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                     ),
                     const SizedBox(height: 8),
                     Text('NRP: ${item['nrp'] ?? '-'}'),
-                    Text('Bulan: ${_getMonthName(item['bulan'])} ${item['tahun'] ?? ''}'),
+                    Text(
+                        'Bulan: ${_getMonthName(item['bulan'])} ${item['tahun'] ?? ''}'),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -203,7 +221,8 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                         ),
                         Text(
                           'Tanggal: ${item['created_at'] != null ? DateFormat('dd/MM/yyyy', 'id_ID').format(DateTime.parse(item['created_at'])) : '-'}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -282,9 +301,10 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.purple.withValues(alpha: 0.1),
+                            color: Colors.purple.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: Colors.purple),
                           ),
@@ -301,7 +321,8 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                     ),
                     const SizedBox(height: 8),
                     Text('NRP: ${item['nrp'] ?? '-'}'),
-                    Text('Bulan: ${_getMonthName(item['bulan'])} ${item['tahun'] ?? ''}'),
+                    Text(
+                        'Bulan: ${_getMonthName(item['bulan'])} ${item['tahun'] ?? ''}'),
                     const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -316,7 +337,8 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
                         ),
                         Text(
                           'Tanggal: ${item['created_at'] != null ? DateFormat('dd/MM/yyyy', 'id_ID').format(DateTime.parse(item['created_at'])) : '-'}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -364,10 +386,13 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
               Text('Nama: ${insentif['nama']}'),
               Text('NRP: ${insentif['nrp']}'),
               Text('Jenis: $type'),
-              Text('Bulan: ${_getMonthName(insentif['bulan'])} ${insentif['tahun']}'),
-              Text('Nominal: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(insentif['nominal'] ?? 0)}'),
+              Text(
+                  'Bulan: ${_getMonthName(insentif['bulan'])} ${insentif['tahun']}'),
+              Text(
+                  'Nominal: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(insentif['nominal'] ?? 0)}'),
               if (insentif['created_at'] != null)
-                Text('Tanggal Dibuat: ${DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(DateTime.parse(insentif['created_at']))}'),
+                Text(
+                    'Tanggal Dibuat: ${DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(DateTime.parse(insentif['created_at']))}'),
             ],
           ),
         ),
@@ -388,19 +413,20 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
           .select('''
             id, nama, nominal, bulan, tahun, nrp, created_at,
             users!inner(name)
-          ''')
-          .order('users.name');
+          ''').order('users.name');
 
       // Transform the nested data
-      return response.map((item) => {
-        'id': item['id'],
-        'nama': item['nama'] ?? item['users']?['name'],
-        'nominal': item['nominal'],
-        'bulan': item['bulan'],
-        'tahun': item['tahun'],
-        'nrp': item['nrp'] ?? item['users']?['nrp'],
-        'created_at': item['created_at'],
-      }).toList();
+      return response
+          .map((item) => {
+                'id': item['id'],
+                'nama': item['nama'] ?? item['users']?['name'],
+                'nominal': item['nominal'],
+                'bulan': item['bulan'],
+                'tahun': item['tahun'],
+                'nrp': item['nrp'] ?? item['users']?['nrp'],
+                'created_at': item['created_at'],
+              })
+          .toList();
     } catch (e) {
       throw 'Failed to fetch all insentif lembur: $e';
     }
@@ -413,19 +439,20 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage> with Tick
           .select('''
             id, nama, nominal, bulan, tahun, nrp, created_at,
             users!inner(name)
-          ''')
-          .order('users.name');
+          ''').order('users.name');
 
       // Transform the nested data
-      return response.map((item) => {
-        'id': item['id'],
-        'nama': item['nama'] ?? item['users']?['name'],
-        'nominal': item['nominal'],
-        'bulan': item['bulan'],
-        'tahun': item['tahun'],
-        'nrp': item['nrp'] ?? item['users']?['nrp'],
-        'created_at': item['created_at'],
-      }).toList();
+      return response
+          .map((item) => {
+                'id': item['id'],
+                'nama': item['nama'] ?? item['users']?['name'],
+                'nominal': item['nominal'],
+                'bulan': item['bulan'],
+                'tahun': item['tahun'],
+                'nrp': item['nrp'] ?? item['users']?['nrp'],
+                'created_at': item['created_at'],
+              })
+          .toList();
     } catch (e) {
       throw 'Failed to fetch all insentif premi: $e';
     }
