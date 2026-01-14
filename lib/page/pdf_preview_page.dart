@@ -314,14 +314,12 @@ class PdfCutiController extends GetxController {
     final pdf = pw.Document();
 
     try {
-      print('DEBUG: Starting PDF generation...');
       await initializeDateFormatting('id_ID', null);
 
       if (cutiController == null) {
         throw 'CutiController not available';
       }
 
-      print('DEBUG: CutiController found, getting login controller...');
       final loginController = Get.find<LoginController>();
       final currentUser = loginController.currentUser.value;
 
@@ -329,11 +327,11 @@ class PdfCutiController extends GetxController {
         throw 'User not logged in';
       }
 
-      print('DEBUG: User data: ${currentUser['name']}, NRP: ${currentUser['nrp']}');
-
       // Load logo from assets
       final logoImage = pw.MemoryImage(
-        (await rootBundle.load('assets/logo/logo_mti.png')).buffer.asUint8List(),
+        (await rootBundle.load('assets/logo/logo_mti.png'))
+            .buffer
+            .asUint8List(),
       );
 
       final tanggalPengajuan = DateTime.now();
@@ -367,8 +365,9 @@ class PdfCutiController extends GetxController {
       final leaveType = cutiController!.selectedLeaveType.value;
       final alasanCuti = cutiController!.alasanController.text;
 
-      final tanggalCutiList = selectedDates.map((date) =>
-          DateFormat('yyyy-MM-dd').format(date)).toList();
+      selectedDates
+          .map((date) => DateFormat('yyyy-MM-dd').format(date))
+          .toList();
 
       pw.ImageProvider? ttdImageProvider;
       // Use ttd_url from current user data (signature photo from database)
@@ -459,9 +458,7 @@ class PdfCutiController extends GetxController {
                     ),
                   ],
                 ),
-
                 pw.SizedBox(height: 20),
-
                 pw.Text(
                   () {
                     if (leaveType == 'CUTI ALASAN PENTING') {
@@ -475,16 +472,12 @@ class PdfCutiController extends GetxController {
                     fontWeight: pw.FontWeight.bold,
                   ),
                 ),
-
                 pw.SizedBox(height: 15),
-
                 pw.Text(
                   'Yang bertanda tangan dibawah ini:',
                   style: pw.TextStyle(fontSize: 11),
                 ),
-
                 pw.SizedBox(height: 10),
-
                 pw.Table(
                   columnWidths: {
                     0: pw.FixedColumnWidth(140),
@@ -500,9 +493,7 @@ class PdfCutiController extends GetxController {
                     _buildTableRow('Alasan Cuti', ':', alasanCuti),
                   ],
                 ),
-
                 pw.SizedBox(height: 15),
-
                 pw.RichText(
                   text: pw.TextSpan(
                     style: pw.TextStyle(fontSize: 11),
@@ -518,9 +509,9 @@ class PdfCutiController extends GetxController {
                       ),
                       pw.TextSpan(text: ' hari kerja, pada tanggal '),
                       pw.TextSpan(
-                        text: selectedDates.isNotEmpty ?
-                          '${DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDates.first)} s.d ${DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDates.last)}' :
-                          '-',
+                        text: selectedDates.isNotEmpty
+                            ? '${DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDates.first)} s.d ${DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDates.last)}'
+                            : '-',
                         style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
                       ),
                       pw.TextSpan(
@@ -530,9 +521,7 @@ class PdfCutiController extends GetxController {
                     ],
                   ),
                 ),
-
                 pw.SizedBox(height: 10),
-
                 pw.Table(
                   border: pw.TableBorder.all(width: 1),
                   columnWidths: {
@@ -598,20 +587,14 @@ class PdfCutiController extends GetxController {
                     ),
                   ],
                 ),
-
                 pw.SizedBox(height: 15),
-
                 pw.SizedBox(height: 8),
-
                 pw.SizedBox(height: 15),
-
                 pw.Text(
                   'Demikian surat permohonan ini saya buat untuk dapat dipertimbangkan sebagaimana mestinya.',
                   style: pw.TextStyle(fontSize: 11),
                 ),
-
                 pw.SizedBox(height: 30),
-
                 pw.Padding(
                   padding: pw.EdgeInsets.only(right: 28),
                   child: pw.Row(
@@ -762,9 +745,7 @@ class PdfCutiController extends GetxController {
                     ],
                   ),
                 ),
-
                 pw.SizedBox(height: 30),
-
                 pw.Table(
                   border: pw.TableBorder.all(width: 1),
                   columnWidths: {
@@ -943,13 +924,10 @@ class PdfCutiController extends GetxController {
         ),
       );
 
-      print('DEBUG: PDF document created, saving...');
       final result = await pdf.save();
-      print('DEBUG: PDF saved, size: ${result.length} bytes');
 
       return result;
     } catch (e) {
-      print('DEBUG: PDF generation error: $e');
       Get.snackbar(
         'Error',
         'Gagal membuat PDF: $e',
@@ -1190,7 +1168,8 @@ class PdfCutiController extends GetxController {
                           // Parse date string and format as DD/MM
                           try {
                             final date = DateTime.parse(dateStr);
-                            final formatted = DateFormat('dd', 'id_ID').format(date);
+                            final formatted =
+                                DateFormat('dd', 'id_ID').format(date);
                             return pw.Padding(
                               padding: pw.EdgeInsets.all(6),
                               child: pw.Text(

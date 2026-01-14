@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:printing/printing.dart';
 
 import '../services/supabase_service.dart';
-import '../services/pdf_service.dart';
 import '../controller/login_controller.dart';
 import '../controller/cuti_controller.dart';
 import 'pdf_preview_page.dart';
@@ -418,7 +416,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                                   IconButton(
                                     icon: const Icon(Icons.picture_as_pdf,
                                         color: Colors.red, size: 20),
-                                    onPressed: () => _previewExistingCutiPdf(leave),
+                                    onPressed: () =>
+                                        _previewExistingCutiPdf(leave),
                                     tooltip: 'Preview PDF',
                                   ),
                                   const SizedBox(width: 8),
@@ -552,7 +551,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       final pdfController = Get.put(PdfCutiController());
 
       // Show loading
-      Get.snackbar('Loading', 'Membuat preview PDF...', duration: const Duration(seconds: 2));
+      Get.snackbar('Loading', 'Membuat preview PDF...',
+          duration: const Duration(seconds: 2));
 
       final pdfData = await pdfController.generateLeavePdfFromForm();
 
@@ -564,12 +564,11 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
 
       // Navigate to PDF Preview Page
       Get.to(() => PdfPreviewPage(
-        title: 'Formulir Pengajuan Cuti',
-        pdfGenerator: () async => pdfData,
-      ));
+            title: 'Formulir Pengajuan Cuti',
+            pdfGenerator: () async => pdfData,
+          ));
     } catch (e) {
       Get.snackbar('Error', 'Gagal membuat preview PDF: $e');
-      print('DEBUG: PDF Preview Error: $e');
     }
   }
 
@@ -579,7 +578,8 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       final pdfController = Get.put(PdfCutiController());
 
       // Show loading
-      Get.snackbar('Loading', 'Memuat PDF cuti...', duration: const Duration(seconds: 2));
+      Get.snackbar('Loading', 'Memuat PDF cuti...',
+          duration: const Duration(seconds: 2));
 
       final pdfData = await pdfController.generateCutiPdf(cutiData);
 
@@ -591,12 +591,11 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
 
       // Navigate to PDF Preview Page
       Get.to(() => PdfPreviewPage(
-        title: 'PDF Cuti - ${cutiData['nama'] ?? 'Unknown'}',
-        pdfGenerator: () async => pdfData,
-      ));
+            title: 'PDF Cuti - ${cutiData['nama'] ?? 'Unknown'}',
+            pdfGenerator: () async => pdfData,
+          ));
     } catch (e) {
       Get.snackbar('Error', 'Gagal memuat PDF cuti: $e');
-      print('DEBUG: Existing PDF Preview Error: $e');
     }
   }
 
