@@ -3,8 +3,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../services/supabase_service.dart';
-import '../controller/login_controller.dart';
 import '../controller/cuti_controller.dart';
 import 'pdf_preview_page.dart';
 
@@ -25,17 +23,10 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
   final TextEditingController _reasonController = TextEditingController();
   String _selectedLeaveType = 'Cuti Tahunan';
 
-  // Riwayat navigation
-  int _currentYear = DateTime.now().year;
-
-  // Sisa cuti
-  int _sisaCuti = 0;
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadUserLeaveBalance();
   }
 
   @override
@@ -111,14 +102,17 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '$_sisaCuti hari',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
+                        Obx(() {
+                          final remaining = cutiController.sisaCuti.value;
+                          return Text(
+                            '$remaining hari',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -264,42 +258,89 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
               ),
             ),
 
+          const SizedBox(height: 16),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Tanda Tangan Digital',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(() {
+                    final hasSignature = cutiController.hasSignature.value;
+                    final url = cutiController.signatureUrl.value;
+
+                    if (!hasSignature || url.isEmpty) {
+                      return const Text(
+                        'Belum ada tanda tangan tersimpan.',
+                        style: TextStyle(fontSize: 14),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Tanda tangan tersimpan:',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 80,
+                          child: Image.network(
+                            url,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: cutiController.showSignatureDialog,
+                      icon: const Icon(Icons.border_color),
+                      label: const Text('Buat / Ubah Tanda Tangan'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 24),
 
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _previewPdf,
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('Preview PDF'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submitLeaveApplication,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _submitLeaveApplication,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text(
-                    'Ajukan Cuti',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
+              child: const Text(
+                'Ajukan Cuti',
+                style: TextStyle(fontSize: 16, color: Colors.white),
               ),
-            ],
+            ),
           ),
         ],
       ),
@@ -313,170 +354,166 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
         Container(
           padding: const EdgeInsets.all(16.0),
           color: Theme.of(context).cardColor,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _currentYear--;
-                  });
-                },
-                icon: const Icon(Icons.chevron_left),
-                tooltip: 'Tahun sebelumnya',
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
+          child: Obx(() {
+            final currentYear = cutiController.selectedYear.value;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: cutiController.previousYear,
+                  icon: const Icon(Icons.chevron_left),
+                  tooltip: 'Tahun sebelumnya',
                 ),
-                child: Text(
-                  _currentYear.toString(),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    currentYear.toString(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _currentYear++;
-                  });
-                },
-                icon: const Icon(Icons.chevron_right),
-                tooltip: 'Tahun berikutnya',
-              ),
-            ],
-          ),
+                IconButton(
+                  onPressed: cutiController.nextYear,
+                  icon: const Icon(Icons.chevron_right),
+                  tooltip: 'Tahun berikutnya',
+                ),
+              ],
+            );
+          }),
         ),
 
         // Leave History List
         Expanded(
-          child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: _fetchLeaveRequests(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              }
-              final allLeaves = snapshot.data ?? [];
+          child: Obx(() {
+            if (cutiController.isLoadingHistory.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-              // Filter by selected year
-              final filteredLeaves = allLeaves.where((leave) {
-                if (leave['tanggal_pengajuan'] == null) return false;
-                try {
-                  final date = DateTime.parse(leave['tanggal_pengajuan']);
-                  return date.year == _currentYear;
-                } catch (e) {
-                  return false;
-                }
-              }).toList();
+            final filteredLeaves = cutiController.filteredCutiHistory;
+            final currentYear = cutiController.selectedYear.value;
 
-              if (filteredLeaves.isEmpty) {
-                return Center(
-                  child: Text(
-                    'Tidak ada data cuti untuk tahun $_currentYear',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                );
-              }
+            if (filteredLeaves.isEmpty) {
+              return Center(
+                child: Text(
+                  'Tidak ada data cuti untuk tahun $currentYear',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              );
+            }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: filteredLeaves.length,
-                itemBuilder: (context, index) {
-                  final leave = filteredLeaves[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  leave['nama'] ?? 'Unknown',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+            return ListView.builder(
+              padding: const EdgeInsets.all(16.0),
+              itemCount: filteredLeaves.length,
+              itemBuilder: (context, index) {
+                final leave = filteredLeaves[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                leave['nama'] ?? 'Unknown',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.picture_as_pdf,
-                                        color: Colors.red, size: 20),
-                                    onPressed: () =>
-                                        _previewExistingCutiPdf(leave),
-                                    tooltip: 'Preview PDF',
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.picture_as_pdf,
+                                    color: Colors.red,
+                                    size: 20,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.blue),
-                                    ),
-                                    child: Text(
-                                      leave['jenis_cuti'] ?? 'Cuti',
-                                      style: const TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  onPressed: () =>
+                                      _previewExistingCutiPdf(leave),
+                                  tooltip: 'Preview PDF',
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.redAccent,
+                                    size: 20,
+                                  ),
+                                  onPressed: () async {
+                                    await cutiController
+                                        .showDeleteConfirmation(leave);
+                                    setState(() {});
+                                  },
+                                  tooltip: 'Hapus Cuti',
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.blue),
+                                  ),
+                                  child: Text(
+                                    leave['jenis_cuti'] ?? 'Cuti',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Lama Cuti: ${leave['lama_cuti'] ?? 0} hari',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          Text(
-                            'Sisa Cuti: ${leave['sisa_cuti'] ?? 0} hari',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          if (leave['tanggal_pengajuan'] != null) ...[
-                            Text(
-                              'Tanggal Pengajuan: ${DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(DateTime.parse(leave['tanggal_pengajuan']))}',
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
                             ),
                           ],
-                          if (leave['alasan_cuti'] != null &&
-                              leave['alasan_cuti'].isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              'Alasan: ${leave['alasan_cuti']}',
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Lama Cuti: ${leave['lama_cuti'] ?? 0} hari',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          'Sisa Cuti: ${leave['sisa_cuti'] ?? 0} hari',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        if (leave['tanggal_pengajuan'] != null) ...[
+                          Text(
+                            'Tanggal Pengajuan: ${DateFormat('dd/MM/yyyy HH:mm', 'id_ID').format(DateTime.parse(leave['tanggal_pengajuan']))}',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
                         ],
-                      ),
+                        if (leave['alasan_cuti'] != null &&
+                            leave['alasan_cuti'].isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Alasan: ${leave['alasan_cuti']}',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
                     ),
-                  );
-                },
-              );
-            },
-          ),
+                  ),
+                );
+              },
+            );
+          }),
         ),
       ],
     );
@@ -492,7 +529,7 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
     });
   }
 
-  void _submitLeaveApplication() {
+  Future<void> _submitLeaveApplication() async {
     if (_selectedDates.isEmpty) {
       Get.snackbar('Error', 'Pilih minimal satu tanggal cuti');
       return;
@@ -504,72 +541,18 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
       return;
     }
 
-    // Here you would submit to Supabase
-    Get.snackbar('Success', 'Pengajuan cuti berhasil dikirim');
+    cutiController.selectedDates
+      ..clear()
+      ..addAll(_selectedDates);
+    cutiController.selectedLeaveType.value = _selectedLeaveType;
+    cutiController.alasanController.text = _reasonController.text;
+
+    await cutiController.submitCutiApplication();
+
     setState(() {
       _selectedDates.clear();
       _reasonController.clear();
     });
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchLeaveRequests() async {
-    try {
-      if (!Get.isRegistered<LoginController>()) {
-        return [];
-      }
-
-      final LoginController loginController = Get.find<LoginController>();
-      final currentUser = loginController.currentUser.value;
-
-      if (currentUser == null || currentUser['id'] == null) {
-        return [];
-      }
-
-      final response = await SupabaseService.instance.client
-          .from('cuti')
-          .select(
-              'id, nama, alasan_cuti, lama_cuti, tanggal_pengajuan, users_id, jenis_cuti, sisa_cuti, list_tanggal_cuti, url_ttd')
-          .eq('users_id', currentUser['id'])
-          .order('tanggal_pengajuan', ascending: false)
-          .limit(100);
-
-      return List<Map<String, dynamic>>.from(response);
-    } catch (e) {
-      // Silently handle error, return empty list
-      return [];
-    }
-  }
-
-  void _previewPdf() async {
-    if (_selectedDates.isEmpty) {
-      Get.snackbar('Error', 'Pilih minimal satu tanggal cuti terlebih dahulu');
-      return;
-    }
-
-    try {
-      // Get PDF controller and generate PDF from current form data
-      final pdfController = Get.put(PdfCutiController());
-
-      // Show loading
-      Get.snackbar('Loading', 'Membuat preview PDF...',
-          duration: const Duration(seconds: 2));
-
-      final pdfData = await pdfController.generateLeavePdfFromForm();
-
-      // Check if PDF data is valid
-      if (pdfData.isEmpty) {
-        Get.snackbar('Error', 'PDF kosong, periksa data yang dimasukkan');
-        return;
-      }
-
-      // Navigate to PDF Preview Page
-      Get.to(() => PdfPreviewPage(
-            title: 'Formulir Pengajuan Cuti',
-            pdfGenerator: () async => pdfData,
-          ));
-    } catch (e) {
-      Get.snackbar('Error', 'Gagal membuat preview PDF: $e');
-    }
   }
 
   void _previewExistingCutiPdf(Map<String, dynamic> cutiData) async {
@@ -596,37 +579,6 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
           ));
     } catch (e) {
       Get.snackbar('Error', 'Gagal memuat PDF cuti: $e');
-    }
-  }
-
-  Future<void> _loadUserLeaveBalance() async {
-    try {
-      if (!Get.isRegistered<LoginController>()) {
-        // LoginController not ready yet, skip loading
-        return;
-      }
-
-      final LoginController loginController = Get.find<LoginController>();
-      final currentUser = loginController.currentUser.value;
-
-      if (currentUser == null) return;
-
-      final response = await SupabaseService.instance.client
-          .from('users')
-          .select('sisa_cuti')
-          .eq('id', currentUser['id'])
-          .single();
-
-      if (response['sisa_cuti'] != null) {
-        if (mounted) {
-          setState(() {
-            _sisaCuti = response['sisa_cuti'] as int;
-          });
-        }
-      }
-    } catch (e) {
-      // Silently handle error, keep default value of 0
-      // This happens when LoginController is not ready yet
     }
   }
 }

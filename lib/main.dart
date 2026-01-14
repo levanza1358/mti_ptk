@@ -34,18 +34,22 @@ void main() async {
   await initializeDateFormatting('id_ID');
 
   // Create permanent LoginController for the entire app
-  if (!Get.isRegistered<LoginController>()) {
-    final controller = LoginController();
-    Get.put(controller, permanent: true);
-    // Load saved login data without redirecting
-    await controller.checkLoginStatus(shouldRedirect: false);
-  }
+  final LoginController controller =
+      Get.isRegistered<LoginController>() ? Get.find<LoginController>() : Get.put(LoginController(), permanent: true);
 
-  runApp(const MyApp());
+  // Load saved login data without redirecting
+  await controller.checkLoginStatus(shouldRedirect: false);
+
+  final String initialRoute =
+      controller.isLoggedIn.value ? '/home' : '/login';
+
+  runApp(MyApp(initialRoute: initialRoute));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +103,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.dark,
-      initialRoute: '/login',
+      initialRoute: initialRoute,
       getPages: [
         GetPage(
           name: '/login',

@@ -31,12 +31,12 @@ class PdfService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Company Header
+              // Company Header (without text beside logo)
               pw.Center(
                 child: pw.Column(
                   children: [
                     pw.Text(
-                      'PT. MITRA TEKNOLOGI INDONESIA',
+                      'PT Multi Terminal Indonesia',
                       style: pw.TextStyle(
                         fontSize: 18,
                         fontWeight: pw.FontWeight.bold,
@@ -88,7 +88,7 @@ class PdfService {
                 ),
               ),
               pw.Text(
-                'PT. Mitra Teknologi Indonesia',
+                'PT Multi Terminal Indonesia',
                 style: const pw.TextStyle(fontSize: 12),
               ),
               pw.SizedBox(height: 5),
@@ -113,7 +113,8 @@ class PdfService {
                   _buildTableRow('Jabatan', ':', position),
                   _buildTableRow('Departemen', ':', 'IT Development'),
                   _buildTableRow('Jenis Cuti', ':', leaveType),
-                  _buildTableRow('Lama Cuti', ':', '${selectedDates.length} hari'),
+                  _buildTableRow(
+                      'Lama Cuti', ':', '${selectedDates.length} hari'),
                   _buildTableRow('Tanggal Cuti', ':', dateRange),
                   _buildTableRow('Sisa Cuti', ':', '$remainingLeave hari'),
                 ],
@@ -481,7 +482,8 @@ class PdfService {
     return pdf.save();
   }
 
-  static pw.TableRow _buildTableRow(String label, String separator, String value) {
+  static pw.TableRow _buildTableRow(
+      String label, String separator, String value) {
     return pw.TableRow(
       children: [
         pw.Container(

@@ -69,15 +69,11 @@ class CutiController extends GetxController
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
 
-    // Initialize signature controller only for non-web platforms
-    // Web platform has compatibility issues with signature package
-    if (!GetPlatform.isWeb) {
-      signatureController = SignatureController(
-        penStrokeWidth: 3,
-        penColor: Colors.black,
-        exportBackgroundColor: Colors.white,
-      );
-    }
+    signatureController = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+      exportBackgroundColor: Colors.white,
+    );
 
     // Listen to year changes and filter data
     ever(selectedYear, (_) => _filterCutiHistoryByYear());
@@ -96,10 +92,7 @@ class CutiController extends GetxController
   @override
   void onClose() {
     alasanController.dispose();
-    // Only dispose signature controller if it was initialized
-    if (!GetPlatform.isWeb) {
-      signatureController.dispose();
-    }
+    signatureController.dispose();
     tabController.dispose();
     super.onClose();
   }
@@ -189,7 +182,10 @@ class CutiController extends GetxController
 
   // Submit cuti application
   Future<void> submitCutiApplication() async {
-    if (!cutiFormKey.currentState!.validate()) return;
+    if (cutiFormKey.currentState != null &&
+        !cutiFormKey.currentState!.validate()) {
+      return;
+    }
 
     if (selectedDates.isEmpty) {
       Get.snackbar(

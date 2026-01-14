@@ -328,11 +328,7 @@ class PdfCutiController extends GetxController {
       }
 
       // Load logo from assets
-      final logoImage = pw.MemoryImage(
-        (await rootBundle.load('assets/logo/logo_mti.png'))
-            .buffer
-            .asUint8List(),
-      );
+      final logoImage = await networkImage('logo/logo_mti.png');
 
       final tanggalPengajuan = DateTime.now();
       final formattedDate = DateFormat(
@@ -369,6 +365,14 @@ class PdfCutiController extends GetxController {
           .map((date) => DateFormat('yyyy-MM-dd').format(date))
           .toList();
 
+      int sisaCutiTahunan = sisaCutiUser;
+      if (leaveType == 'Cuti Tahunan') {
+        sisaCutiTahunan = sisaCutiUser - selectedDates.length;
+        if (sisaCutiTahunan < 0) {
+          sisaCutiTahunan = 0;
+        }
+      }
+
       pw.ImageProvider? ttdImageProvider;
       // Use ttd_url from current user data (signature photo from database)
       final String? ttdUrl = currentUser['ttd_url']?.toString();
@@ -401,36 +405,11 @@ class PdfCutiController extends GetxController {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    // Logo and Company Header
-                    pw.Row(
-                      children: [
-                        pw.Image(
-                          logoImage,
-                          width: 60,
-                          height: 60,
-                          fit: pw.BoxFit.contain,
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text(
-                              'PT. MITRA TEKNOLOGI INDONESIA',
-                              style: pw.TextStyle(
-                                fontSize: 14,
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                            pw.Text(
-                              'PONTIANAK',
-                              style: pw.TextStyle(
-                                fontSize: 12,
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    pw.Image(
+                      logoImage,
+                      width: 90,
+                      height: 90,
+                      fit: pw.BoxFit.contain,
                     ),
                     pw.SizedBox(height: 10),
                     // Date and Address
@@ -836,7 +815,7 @@ class PdfCutiController extends GetxController {
                                 }
                               }(),
                               pw.Text(
-                                '4. Sisa Cuti Tahunan : $sisaCutiUser Hari',
+                                '4. Sisa Cuti Tahunan : $sisaCutiTahunan Hari',
                                 style: pw.TextStyle(fontSize: 7),
                               ),
                             ],
@@ -987,7 +966,9 @@ class PdfCutiController extends GetxController {
       final jabatan = userData['jabatan'] ?? 'Jabatan Pegawai';
       final group = userData['group'] ?? '-';
       final userStatus = userData['status'] ?? 'Operasional';
-      final sisaCutiUser = (userData['sisa_cuti'] ?? 0).toString();
+      final dynamic sisaCutiFromCuti = cutiData['sisa_cuti'];
+      final sisaCutiUser =
+          (sisaCutiFromCuti ?? userData['sisa_cuti'] ?? 0).toString();
 
       final supervisorJenis = getSupervisorJenisByUserStatus(userStatus);
       final supervisorData = await fetchSupervisorByJenis(supervisorJenis);
@@ -1020,6 +1001,12 @@ class PdfCutiController extends GetxController {
       }
       // Note: Signature functionality not implemented in current system
 
+      final logoImage = pw.MemoryImage(
+        (await rootBundle.load('assets/logo/logo_mti.png'))
+            .buffer
+            .asUint8List(),
+      );
+
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -1028,23 +1015,50 @@ class PdfCutiController extends GetxController {
             return pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
+                pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      'Pontianak, $formattedDate',
-                      style: pw.TextStyle(fontSize: 10),
+                    pw.Expanded(
+                      flex: 1,
+                      child: pw.Align(
+                        alignment: pw.Alignment.topLeft,
+                        child: pw.Image(
+                          logoImage,
+                          width: 90,
+                          height: 90,
+                          fit: pw.BoxFit.contain,
+                        ),
+                      ),
                     ),
-                    pw.SizedBox(height: 5),
-                    pw.Text(
-                      'Yth. REGIONAL MANAGER JAKARTA',
-                      style: pw.TextStyle(fontSize: 10),
+                    pw.SizedBox(width: 12),
+                    pw.Expanded(
+                      flex: 2,
+                      child: pw.Container(
+                        alignment: pw.Alignment.topRight,
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.end,
+                          children: [
+                            pw.Text(
+                              'Pontianak, $formattedDate',
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                            pw.SizedBox(height: 5),
+                            pw.Text(
+                              'Yth. REGIONAL MANAGER JAKARTA',
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                            pw.Text(
+                              'PT PELINDO DAYA SEJAHTERA',
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                            pw.Text(
+                              'JAKARTA',
+                              style: pw.TextStyle(fontSize: 10),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    pw.Text(
-                      'PT PELINDO DAYA SEJAHTERA',
-                      style: pw.TextStyle(fontSize: 10),
-                    ),
-                    pw.Text('JAKARTA', style: pw.TextStyle(fontSize: 10)),
                   ],
                 ),
 
