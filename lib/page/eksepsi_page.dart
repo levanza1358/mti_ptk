@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/supabase_service.dart';
+import '../services/pdf_service.dart';
 import '../controller/login_controller.dart';
 
 class EksepsiPage extends StatefulWidget {
@@ -206,23 +208,40 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
 
           const SizedBox(height: 24),
 
-          // Submit Button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _submitExceptionApplication,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _previewPdf,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Preview PDF'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                'Ajukan Eksepsi',
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitExceptionApplication,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Ajukan Eksepsi',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -273,6 +292,39 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
         _selectedDates.add(selectedDay);
       }
     });
+  }
+
+  void _previewPdf() async {
+    if (_selectedDates.isEmpty) {
+      Get.snackbar('Error', 'Pilih minimal satu tanggal eksepsi terlebih dahulu');
+      return;
+    }
+
+    final loginController = Get.find<LoginController>();
+    final currentUser = loginController.currentUser.value;
+
+    if (currentUser == null) {
+      Get.snackbar('Error', 'User tidak ditemukan');
+      return;
+    }
+
+    try {
+      final pdfData = await PdfService.generateExceptionPdf(
+        employeeName: currentUser['name'] ?? 'Unknown',
+        exceptionType: _selectedExceptionType,
+        selectedDates: _selectedDates.toList(),
+        reason: _reasonController.text,
+        employeeId: currentUser['nrp'] ?? 'N/A',
+        position: currentUser['jabatan'] ?? 'Staff',
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdfData,
+        name: 'Formulir Pengajuan Eksepsi',
+      );
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal membuat preview PDF: $e');
+    }
   }
 
   void _submitExceptionApplication() {

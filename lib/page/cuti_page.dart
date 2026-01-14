@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:printing/printing.dart';
 
 import '../services/supabase_service.dart';
+import '../services/pdf_service.dart';
 import '../controller/login_controller.dart';
+import '../controller/cuti_controller.dart';
+import 'pdf_preview_page.dart';
 
 class CutiPage extends StatefulWidget {
   const CutiPage({super.key});
@@ -14,6 +18,7 @@ class CutiPage extends StatefulWidget {
 }
 
 class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
+  final CutiController cutiController = Get.put(CutiController());
   late TabController _tabController;
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   final DateTime _focusedDay = DateTime.now();
@@ -263,23 +268,40 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
 
           const SizedBox(height: 24),
 
-          // Submit Button
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _submitLeaveApplication,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          // Action Buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _previewPdf,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Preview PDF'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                'Ajukan Cuti',
-                style: TextStyle(fontSize: 16, color: Colors.white),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitLeaveApplication,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Ajukan Cuti',
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -391,22 +413,33 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                                   ),
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.blue),
-                                ),
-                                child: Text(
-                                  leave['jenis_cuti'] ?? 'Cuti',
-                                  style: const TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.picture_as_pdf,
+                                        color: Colors.red, size: 20),
+                                    onPressed: () => _previewExistingCutiPdf(leave),
+                                    tooltip: 'Preview PDF',
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.blue),
+                                    ),
+                                    child: Text(
+                                      leave['jenis_cuti'] ?? 'Cuti',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -482,54 +515,102 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
 
   Future<List<Map<String, dynamic>>> _fetchLeaveRequests() async {
     try {
+      if (!Get.isRegistered<LoginController>()) {
+        return [];
+      }
+
       final LoginController loginController = Get.find<LoginController>();
       final currentUser = loginController.currentUser.value;
 
-      if (currentUser == null) {
+      if (currentUser == null || currentUser['id'] == null) {
         return [];
       }
-
-      if (currentUser['id'] == null) {
-        return [];
-      }
-
-      // First, let's check if there are any records at all
-      await SupabaseService.instance.client
-          .from('cuti')
-          .select('count')
-          .limit(1);
-
-      // Check records for this user
-      final userRecords = await SupabaseService.instance.client
-          .from('cuti')
-          .select('id, nama, users_id')
-          .eq('users_id', currentUser['id']);
-      if (userRecords.isNotEmpty) {}
 
       final response = await SupabaseService.instance.client
           .from('cuti')
           .select(
-              'nama, alasan_cuti, lama_cuti, tanggal_pengajuan, users_id, jenis_cuti, sisa_cuti')
+              'id, nama, alasan_cuti, lama_cuti, tanggal_pengajuan, users_id, jenis_cuti, sisa_cuti, list_tanggal_cuti, url_ttd')
           .eq('users_id', currentUser['id'])
           .order('tanggal_pengajuan', ascending: false)
           .limit(100);
 
-      if (response.isNotEmpty) {}
-
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      throw 'Failed to fetch leave requests: $e';
+      // Silently handle error, return empty list
+      return [];
+    }
+  }
+
+  void _previewPdf() async {
+    if (_selectedDates.isEmpty) {
+      Get.snackbar('Error', 'Pilih minimal satu tanggal cuti terlebih dahulu');
+      return;
+    }
+
+    try {
+      // Get PDF controller and generate PDF from current form data
+      final pdfController = Get.put(PdfCutiController());
+
+      // Show loading
+      Get.snackbar('Loading', 'Membuat preview PDF...', duration: const Duration(seconds: 2));
+
+      final pdfData = await pdfController.generateLeavePdfFromForm();
+
+      // Check if PDF data is valid
+      if (pdfData.isEmpty) {
+        Get.snackbar('Error', 'PDF kosong, periksa data yang dimasukkan');
+        return;
+      }
+
+      // Navigate to PDF Preview Page
+      Get.to(() => PdfPreviewPage(
+        title: 'Formulir Pengajuan Cuti',
+        pdfGenerator: () async => pdfData,
+      ));
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal membuat preview PDF: $e');
+      print('DEBUG: PDF Preview Error: $e');
+    }
+  }
+
+  void _previewExistingCutiPdf(Map<String, dynamic> cutiData) async {
+    try {
+      // Get PDF controller and generate PDF from existing cuti data
+      final pdfController = Get.put(PdfCutiController());
+
+      // Show loading
+      Get.snackbar('Loading', 'Memuat PDF cuti...', duration: const Duration(seconds: 2));
+
+      final pdfData = await pdfController.generateCutiPdf(cutiData);
+
+      // Check if PDF data is valid
+      if (pdfData.isEmpty) {
+        Get.snackbar('Error', 'PDF kosong, data cuti tidak valid');
+        return;
+      }
+
+      // Navigate to PDF Preview Page
+      Get.to(() => PdfPreviewPage(
+        title: 'PDF Cuti - ${cutiData['nama'] ?? 'Unknown'}',
+        pdfGenerator: () async => pdfData,
+      ));
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal memuat PDF cuti: $e');
+      print('DEBUG: Existing PDF Preview Error: $e');
     }
   }
 
   Future<void> _loadUserLeaveBalance() async {
     try {
+      if (!Get.isRegistered<LoginController>()) {
+        // LoginController not ready yet, skip loading
+        return;
+      }
+
       final LoginController loginController = Get.find<LoginController>();
       final currentUser = loginController.currentUser.value;
 
-      if (currentUser == null || currentUser['id'] == null) {
-        return;
-      }
+      if (currentUser == null) return;
 
       final response = await SupabaseService.instance.client
           .from('users')
@@ -538,12 +619,15 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
           .single();
 
       if (response['sisa_cuti'] != null) {
-        setState(() {
-          _sisaCuti = response['sisa_cuti'] as int;
-        });
-      } else {}
+        if (mounted) {
+          setState(() {
+            _sisaCuti = response['sisa_cuti'] as int;
+          });
+        }
+      }
     } catch (e) {
-      // Keep default value of 0
+      // Silently handle error, keep default value of 0
+      // This happens when LoginController is not ready yet
     }
   }
 }
