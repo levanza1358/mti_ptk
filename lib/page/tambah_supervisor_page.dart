@@ -130,7 +130,7 @@ class _TambahSupervisorPageState extends State<TambahSupervisorPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedEmployeeId,
+                        value: _selectedEmployeeId,
                         decoration: const InputDecoration(
                           labelText: 'Cari Pegawai',
                           border: OutlineInputBorder(),

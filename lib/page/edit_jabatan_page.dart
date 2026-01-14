@@ -150,7 +150,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedJabatanId,
+                        value: _selectedJabatanId,
                         decoration: const InputDecoration(
                           labelText: 'Cari Jabatan',
                           border: OutlineInputBorder(),

@@ -83,7 +83,6 @@ class _TambahPegawaiPageState extends State<TambahPegawaiPage> {
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 24),
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -217,10 +216,12 @@ class _TambahPegawaiPageState extends State<TambahPegawaiPage> {
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Tambah Pegawai',
-                                  style: TextStyle(fontSize: 16, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 16, color: Colors.white),
                                 ),
                         ),
                       ),

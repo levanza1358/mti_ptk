@@ -1,4 +1,4 @@
-name: Deploy Flutter Web to GitHub Pages
+name: Build and Deploy Flutter Web
 
 on:
   push:
@@ -6,44 +6,57 @@ on:
       - main
   workflow_dispatch:
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+# Permissions required for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
+# Ensure only one deployment runs at a time
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
     steps:
-      # Checkout repository
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.27.1'
+          cache: true
 
-      # Enable web support
       - name: Enable Flutter web
         run: flutter config --enable-web
 
-      # Get dependencies
-      - name: Get dependencies
+      - name: Flutter pub get
         run: flutter pub get
 
-      # Build web
-      - name: Build web
-        run: flutter build web --release --no-tree-shake-icons --base-href "/mti-ptk/"
+      - name: Analyze Flutter code
+        run: flutter analyze --no-fatal-infos
 
-      # Copy build files to docs folder
-      - name: Copy build to docs
-        run: |
-          rm -rf docs
-          mkdir docs
-          cp -r build/web/* docs/
+      - name: Run Flutter tests
+        run: flutter test
 
-      # Deploy to GitHub Pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Build Flutter web
+        run: flutter build web --release --no-tree-shake-icons --base-href "/mti-ptk/" --no-wasm-dry-run
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          cname: mti-ptk.vercel.app
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

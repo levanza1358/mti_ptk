@@ -120,7 +120,7 @@ class _EditGroupPageState extends State<EditGroupPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedGroupId,
+                        value: _selectedGroupId,
                         decoration: const InputDecoration(
                           labelText: 'Cari Grup',
                           border: OutlineInputBorder(),

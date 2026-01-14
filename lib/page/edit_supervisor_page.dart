@@ -133,7 +133,7 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        initialValue: _selectedSupervisorId,
+                        value: _selectedSupervisorId,
                         decoration: const InputDecoration(
                           labelText: 'Cari Supervisor',
                           border: OutlineInputBorder(),

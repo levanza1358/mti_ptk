@@ -14,7 +14,8 @@ class EksepsiPage extends StatefulWidget {
   State<EksepsiPage> createState() => _EksepsiPageState();
 }
 
-class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin {
+class _EksepsiPageState extends State<EksepsiPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   final DateTime _focusedDay = DateTime.now();
@@ -92,17 +93,20 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
                     initialValue: _selectedExceptionType,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                     items: [
                       'Eksepsi Datang Terlambat',
                       'Eksepsi Pulang Awal',
                       'Eksepsi Tidak Masuk',
                       'Eksepsi Lainnya'
-                    ].map((type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(type),
-                    )).toList(),
+                    ]
+                        .map((type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ))
+                        .toList(),
                     onChanged: (value) {
                       setState(() {
                         _selectedExceptionType = value!;
@@ -272,9 +276,9 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
                 title: Text('Eksepsi ${exception['nama'] ?? 'Unknown'}'),
                 subtitle: Text('Jenis: ${exception['jenis_eksepsi'] ?? 'N/A'}'),
                 trailing: Text(
-                  DateFormat('dd/MM/yyyy', 'id_ID').format(
-                    DateTime.parse(exception['tanggal_pengajuan'] ?? DateTime.now().toString())
-                  ),
+                  DateFormat('dd/MM/yyyy', 'id_ID').format(DateTime.parse(
+                      exception['tanggal_pengajuan'] ??
+                          DateTime.now().toString())),
                 ),
               ),
             );
@@ -296,7 +300,8 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
 
   void _previewPdf() async {
     if (_selectedDates.isEmpty) {
-      Get.snackbar('Error', 'Pilih minimal satu tanggal eksepsi terlebih dahulu');
+      Get.snackbar(
+          'Error', 'Pilih minimal satu tanggal eksepsi terlebih dahulu');
       return;
     }
 
@@ -366,14 +371,16 @@ class _EksepsiPageState extends State<EksepsiPage> with TickerProviderStateMixin
           .limit(20);
 
       // Transform the nested data
-      return response.map((item) => {
-        'id': item['id'],
-        'user_id': item['user_id'],
-        'jenis_eksepsi': item['jenis_eksepsi'],
-        'tanggal_pengajuan': item['tanggal_pengajuan'],
-        'created_at': item['created_at'],
-        'nama': item['users']?['name'] ?? 'Unknown',
-      }).toList();
+      return response
+          .map((item) => {
+                'id': item['id'],
+                'user_id': item['user_id'],
+                'jenis_eksepsi': item['jenis_eksepsi'],
+                'tanggal_pengajuan': item['tanggal_pengajuan'],
+                'created_at': item['created_at'],
+                'nama': item['users']?['name'] ?? 'Unknown',
+              })
+          .toList();
     } catch (e) {
       throw 'Failed to fetch exception requests: $e';
     }

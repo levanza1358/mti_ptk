@@ -76,7 +76,8 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
       return;
     }
 
-    final employee = _employees.firstWhere((emp) => emp['id'].toString() == employeeId);
+    final employee =
+        _employees.firstWhere((emp) => emp['id'].toString() == employeeId);
     setState(() {
       _selectedEmployeeId = employeeId;
       _nrpController.text = employee['nrp'] ?? '';
@@ -141,7 +142,8 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                     children: [
                       const Text(
                         'Pilih Pegawai',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
@@ -154,7 +156,8 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                         items: _employees.map((employee) {
                           return DropdownMenuItem<String>(
                             value: employee['id'].toString(),
-                            child: Text('${employee['name']} (${employee['nrp']})'),
+                            child: Text(
+                                '${employee['name']} (${employee['nrp']})'),
                           );
                         }).toList(),
                         onChanged: _onEmployeeSelected,
@@ -215,7 +218,8 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                             labelText: 'Password Baru (Opsional)',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.lock),
-                            hintText: 'Kosongkan jika tidak ingin mengubah password',
+                            hintText:
+                                'Kosongkan jika tidak ingin mengubah password',
                           ),
                           obscureText: true,
                         ),
@@ -283,7 +287,8 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                                   backgroundColor: Colors.blue,
                                 ),
                                 child: _isLoading
-                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white)
                                     : const Text(
                                         'Simpan Perubahan',
                                         style: TextStyle(color: Colors.white),
