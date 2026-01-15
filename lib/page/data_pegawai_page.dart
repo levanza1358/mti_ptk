@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class DataPegawaiPage extends StatelessWidget {
   const DataPegawaiPage({super.key});
@@ -43,7 +44,7 @@ class DataPegawaiPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Add new employee
-          Get.snackbar('Info', 'Fitur tambah pegawai akan segera hadir');
+          showTopToast('Fitur tambah pegawai akan segera hadir');
         },
         child: const Icon(Icons.add),
       ),

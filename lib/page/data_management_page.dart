@@ -2,9 +2,59 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
-class DataManagementPage extends StatelessWidget {
+class DataManagementPage extends StatefulWidget {
   const DataManagementPage({super.key});
+
+  @override
+  State<DataManagementPage> createState() => _DataManagementPageState();
+}
+
+class _DataManagementPageState extends State<DataManagementPage> {
+  late final Future<Map<String, int>> _summaryFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _summaryFuture = _fetchSummaryCounts();
+  }
+
+  Future<int> _fetchTableCount(String table) async {
+    try {
+      final resp = await SupabaseService.instance.client
+          .from(table)
+          .select('id')
+          .count();
+      final dynamic countValue = (resp as dynamic).count;
+      return countValue is int ? countValue : 0;
+    } catch (e) {
+      showTopToast(
+        'Gagal memuat jumlah data $table: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return 0;
+    }
+  }
+
+  Future<Map<String, int>> _fetchSummaryCounts() async {
+    final results = await Future.wait<int>([
+      _fetchTableCount('users'),
+      _fetchTableCount('group'),
+      _fetchTableCount('jabatan'),
+      _fetchTableCount('supervisor'),
+    ]);
+
+    return {
+      'pegawai': results[0],
+      'grup': results[1],
+      'jabatan': results[2],
+      'supervisor': results[3],
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +97,17 @@ class DataManagementPage extends StatelessWidget {
               Colors.blue,
               [
                 _buildActionCard(
+                  context,
                   'Tambah Pegawai',
                   Icons.person_add,
-                  Colors.blue.shade100,
+                  Colors.blue,
                   () => Get.toNamed('/tambah-pegawai'),
                 ),
                 _buildActionCard(
+                  context,
                   'Edit Pegawai',
                   Icons.edit,
-                  Colors.blue.shade100,
+                  Colors.blue,
                   () => Get.toNamed('/edit-pegawai'),
                 ),
               ],
@@ -71,15 +123,17 @@ class DataManagementPage extends StatelessWidget {
               Colors.green,
               [
                 _buildActionCard(
+                  context,
                   'Tambah Grup',
                   Icons.group_add,
-                  Colors.green.shade100,
+                  Colors.green,
                   () => Get.toNamed('/tambah-group'),
                 ),
                 _buildActionCard(
+                  context,
                   'Edit Grup',
                   Icons.edit,
-                  Colors.green.shade100,
+                  Colors.green,
                   () => Get.toNamed('/edit-group'),
                 ),
               ],
@@ -95,15 +149,17 @@ class DataManagementPage extends StatelessWidget {
               Colors.orange,
               [
                 _buildActionCard(
+                  context,
                   'Tambah Jabatan',
                   Icons.add,
-                  Colors.orange.shade100,
+                  Colors.orange,
                   () => Get.toNamed('/tambah-jabatan'),
                 ),
                 _buildActionCard(
+                  context,
                   'Edit Jabatan',
                   Icons.edit,
-                  Colors.orange.shade100,
+                  Colors.orange,
                   () => Get.toNamed('/edit-jabatan'),
                 ),
               ],
@@ -119,15 +175,10 @@ class DataManagementPage extends StatelessWidget {
               Colors.purple,
               [
                 _buildActionCard(
-                  'Tambah Supervisor',
-                  Icons.person_add,
-                  Colors.purple.shade100,
-                  () => Get.toNamed('/tambah-supervisor'),
-                ),
-                _buildActionCard(
+                  context,
                   'Edit Supervisor',
                   Icons.edit,
-                  Colors.purple.shade100,
+                  Colors.purple,
                   () => Get.toNamed('/edit-supervisor'),
                 ),
               ],
@@ -139,50 +190,77 @@ class DataManagementPage extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ringkasan Data',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
+                child: FutureBuilder<Map<String, int>>(
+                  future: _summaryFuture,
+                  builder: (context, snapshot) {
+                    final isLoading =
+                        snapshot.connectionState == ConnectionState.waiting;
+                    final data = snapshot.data;
+                    final pegawai = data?['pegawai'];
+                    final grup = data?['grup'];
+                    final jabatan = data?['jabatan'];
+                    final supervisor = data?['supervisor'];
+
+                    String formatCount(int? value) {
+                      if (value == null) return isLoading ? '-' : '0';
+                      return value.toString();
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildStatCard(
-                              'Pegawai', '0', Icons.people, Colors.blue),
+                        const Text(
+                          'Ringkasan Data',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildStatCard(
-                              'Grup', '0', Icons.group, Colors.green),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                  'Pegawai',
+                                  formatCount(pegawai),
+                                  Icons.people,
+                                  Colors.blue),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard('Grup', formatCount(grup),
+                                  Icons.group, Colors.green),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildStatCard(
+                                  'Jabatan',
+                                  formatCount(jabatan),
+                                  Icons.work,
+                                  Colors.orange),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildStatCard(
-                              'Jabatan', '0', Icons.work, Colors.orange),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                  'Supervisor',
+                                  formatCount(supervisor),
+                                  Icons.supervisor_account,
+                                  Colors.purple),
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              flex: 2,
+                              child: SizedBox.shrink(),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard('Supervisor', '0',
-                              Icons.supervisor_account, Colors.purple),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: Container(), // Empty space
-                        ),
-                      ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -211,7 +289,7 @@ class DataManagementPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -234,8 +312,10 @@ class DataManagementPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionCard(
-      String title, IconData icon, Color bgColor, VoidCallback onTap) {
+  Widget _buildActionCard(BuildContext context, String title, IconData icon,
+      Color color, VoidCallback onTap) {
+    final iconBg = color.withValues(alpha: 0.14);
+    final iconBorder = color.withValues(alpha: 0.28);
     return Card(
       elevation: 2,
       child: InkWell(
@@ -248,10 +328,11 @@ class DataManagementPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: bgColor,
+                  color: iconBg,
+                  border: Border.all(color: iconBorder),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, size: 20),
+                child: Icon(icon, size: 20, color: color),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -263,7 +344,8 @@ class DataManagementPage extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              Icon(Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -276,7 +358,7 @@ class DataManagementPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class TambahPegawaiPage extends StatefulWidget {
   const TambahPegawaiPage({super.key});
@@ -51,7 +52,12 @@ class _TambahPegawaiPageState extends State<TambahPegawaiPage> {
         _jabatan = List<Map<String, dynamic>>.from(jabatanResponse);
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data grup dan jabatan: $e');
+      showTopToast(
+        'Gagal memuat data grup dan jabatan: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -254,11 +260,11 @@ class _TambahPegawaiPageState extends State<TambahPegawaiPage> {
         'group': _selectedGroup,
       });
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'Pegawai berhasil ditambahkan',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
       // Clear form
@@ -272,11 +278,11 @@ class _TambahPegawaiPageState extends State<TambahPegawaiPage> {
 
       Get.back(); // Go back to previous page
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menambah pegawai: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

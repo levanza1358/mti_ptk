@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
+import '../controller/login_controller.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class InsentifPage extends StatefulWidget {
   const InsentifPage({super.key});
@@ -11,7 +13,8 @@ class InsentifPage extends StatefulWidget {
   State<InsentifPage> createState() => _InsentifPageState();
 }
 
-class _InsentifPageState extends State<InsentifPage> with TickerProviderStateMixin {
+class _InsentifPageState extends State<InsentifPage>
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -28,6 +31,7 @@ class _InsentifPageState extends State<InsentifPage> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -36,19 +40,50 @@ class _InsentifPageState extends State<InsentifPage> with TickerProviderStateMix
           tooltip: 'Kembali ke Beranda',
         ),
         title: const Text('Insentif'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Lembur'),
-            Tab(text: 'Premi'),
-          ],
+        centerTitle: true,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicatorPadding: EdgeInsets.zero,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.blue,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6),
+              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+              tabs: const [
+                Tab(text: 'Premi'),
+                Tab(text: 'Lembur'),
+              ],
+            ),
+          ),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
-          InsentifLemburTab(tabController: _tabController),
           InsentifPremiTab(tabController: _tabController),
+          InsentifLemburTab(tabController: _tabController),
         ],
       ),
     );
@@ -69,6 +104,13 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
   final TextEditingController _nominalController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   bool _showForm = false;
+  late int _selectedYear;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedYear = DateTime.now().year;
+  }
 
   @override
   void dispose() {
@@ -94,7 +136,7 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
 
   Widget _buildList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchInsentifLembur(),
+      future: _fetchInsentifLembur(year: _selectedYear),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -103,34 +145,192 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
         final lembur = snapshot.data ?? [];
+        final total = lembur.fold<int>(
+          0,
+          (sum, item) => sum + _parseNominal(item['nominal']),
+        );
         if (lembur.isEmpty) {
-          return const Center(child: Text('Belum ada data insentif lembur'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: lembur.length,
-          itemBuilder: (context, index) {
-            final item = lembur[index];
-            return Card(
-              child: ListTile(
-                title: Text(item['nama'] ?? 'Unknown'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('NRP: ${item['nrp']}'),
-                    Text('Bulan: ${_formatDate(item['bulan'])}'),
-                  ],
-                ),
-                trailing: Text(
-                  'Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(item['nominal'] ?? 0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+          return Column(
+            children: [
+              _buildYearHeader(title: 'Total Lembur', total: total),
+              const Expanded(
+                child: Center(child: Text('Belum ada data insentif lembur')),
               ),
-            );
-          },
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _buildYearHeader(title: 'Total Lembur', total: total),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: lembur.length,
+                itemBuilder: (context, index) {
+                  final item = lembur[index];
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  final nominalStr = NumberFormat.currency(
+                          locale: 'id_ID', symbol: '', decimalDigits: 0)
+                      .format(_parseNominal(item['nominal']));
+                  final bulanStr = _formatDate(item['bulan']);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.grey.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (item['nama'] ?? 'Unknown').toString(),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'NRP: ${(item['nrp'] ?? '-').toString()}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange
+                                            .withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border:
+                                            Border.all(color: Colors.orange),
+                                      ),
+                                      child: Text(
+                                        'Lembur • $bulanStr',
+                                        style: const TextStyle(
+                                          color: Colors.orange,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Rp $nominalStr',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.orange),
+                            ),
+                            child: const Icon(Icons.chevron_right,
+                                color: Colors.orange, size: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
+  }
+
+  Widget _buildYearHeader({required String title, required int total}) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: Theme.of(context).cardColor,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedYear -= 1;
+              });
+            },
+            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Tahun sebelumnya',
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  _selectedYear.toString(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$title: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(total)}',
+                  style: const TextStyle(fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedYear += 1;
+              });
+            },
+            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Tahun berikutnya',
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _parseNominal(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is num) return value.toInt();
+    final raw = value.toString().trim();
+    final cleaned = raw.replaceAll('.', '').replaceAll(',', '');
+    return int.tryParse(cleaned) ?? 0;
   }
 
   Widget _buildAddForm() {
@@ -184,7 +384,8 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
                   const SizedBox(height: 16),
                   ListTile(
                     title: const Text('Bulan'),
-                    subtitle: Text(DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
+                    subtitle: Text(
+                        DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: _selectDate,
                   ),
@@ -236,18 +437,33 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
 
   void _submitLembur() {
     if (_nrpController.text.isEmpty || _nominalController.text.isEmpty) {
-      Get.snackbar('Error', 'Harap isi semua field');
+      showTopToast(
+        'Harap isi semua field',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       return;
     }
 
     final nominal = int.tryParse(_nominalController.text.replaceAll('.', ''));
     if (nominal == null) {
-      Get.snackbar('Error', 'Nominal harus berupa angka');
+      showTopToast(
+        'Nominal harus berupa angka',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       return;
     }
 
     // Here you would submit to Supabase
-    Get.snackbar('Success', 'Insentif lembur berhasil ditambahkan');
+    showTopToast(
+      'Insentif lembur berhasil ditambahkan',
+      background: Colors.green,
+      foreground: Colors.white,
+      duration: const Duration(seconds: 3),
+    );
     setState(() {
       _showForm = false;
       _clearForm();
@@ -270,15 +486,69 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchInsentifLembur() async {
+  Future<List<Map<String, dynamic>>> _fetchInsentifLembur(
+      {required int year}) async {
     try {
-      final response = await SupabaseService.instance.client
-          .from('insentif_lembur')
-          .select('nama, nrp, nominal, bulan, tahun')
-          .order('tahun', ascending: false)
-          .order('bulan', ascending: false)
-          .limit(20);
-      return List<Map<String, dynamic>>.from(response);
+      if (!Get.isRegistered<LoginController>()) {
+        return [];
+      }
+
+      final loginController = Get.find<LoginController>();
+      final user = loginController.currentUser.value;
+      final userId = user?['id'];
+      final nrp = (user?['nrp'] ?? '').toString();
+
+      if (userId == null && nrp.isEmpty) {
+        return [];
+      }
+
+      Future<List<Map<String, dynamic>>?> tryQuery({
+        required Map<String, dynamic> filters,
+        required dynamic tahunValue,
+      }) async {
+        try {
+          dynamic q = SupabaseService.instance.client
+              .from('insentif_lembur')
+              .select('nama, nrp, nominal, bulan, tahun')
+              .eq('tahun', tahunValue);
+          for (final entry in filters.entries) {
+            q = q.eq(entry.key, entry.value);
+          }
+          final resp = await q
+              .order('tahun', ascending: false)
+              .order('bulan', ascending: false)
+              .limit(50);
+          return List<Map<String, dynamic>>.from(resp);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      List<Map<String, dynamic>>? result;
+
+      if (userId != null) {
+        result =
+            await tryQuery(filters: {'users_id': userId}, tahunValue: year);
+        result ??=
+            await tryQuery(filters: {'user_id': userId}, tahunValue: year);
+
+        if (result != null && result.isEmpty) {
+          result = await tryQuery(
+                  filters: {'users_id': userId}, tahunValue: year.toString()) ??
+              await tryQuery(
+                  filters: {'user_id': userId}, tahunValue: year.toString());
+        }
+      }
+
+      if (result == null || result.isEmpty) {
+        result = await tryQuery(filters: {'nrp': nrp}, tahunValue: year);
+        if (result != null && result.isEmpty) {
+          result = await tryQuery(
+              filters: {'nrp': nrp}, tahunValue: year.toString());
+        }
+      }
+
+      return result ?? [];
     } catch (e) {
       throw 'Failed to fetch lembur incentives: $e';
     }
@@ -299,6 +569,13 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
   final TextEditingController _nominalController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   bool _showForm = false;
+  late int _selectedYear;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedYear = DateTime.now().year;
+  }
 
   @override
   void dispose() {
@@ -324,7 +601,7 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
 
   Widget _buildList() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _fetchInsentifPremi(),
+      future: _fetchInsentifPremi(year: _selectedYear),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -333,34 +610,191 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
         final premi = snapshot.data ?? [];
+        final total = premi.fold<int>(
+          0,
+          (sum, item) => sum + _parseNominal(item['nominal']),
+        );
         if (premi.isEmpty) {
-          return const Center(child: Text('Belum ada data insentif premi'));
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: premi.length,
-          itemBuilder: (context, index) {
-            final item = premi[index];
-            return Card(
-              child: ListTile(
-                title: Text(item['nama'] ?? 'Unknown'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('NRP: ${item['nrp']}'),
-                    Text('Bulan: ${_formatDate(item['bulan'])}'),
-                  ],
-                ),
-                trailing: Text(
-                  'Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(item['nominal'] ?? 0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+          return Column(
+            children: [
+              _buildYearHeader(title: 'Total Premi', total: total),
+              const Expanded(
+                child: Center(child: Text('Belum ada data insentif premi')),
               ),
-            );
-          },
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _buildYearHeader(title: 'Total Premi', total: total),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: premi.length,
+                itemBuilder: (context, index) {
+                  final item = premi[index];
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  final nominalStr = NumberFormat.currency(
+                          locale: 'id_ID', symbol: '', decimalDigits: 0)
+                      .format(_parseNominal(item['nominal']));
+                  final bulanStr = _formatDate(item['bulan']);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.grey.withValues(alpha: 0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (item['nama'] ?? 'Unknown').toString(),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'NRP: ${(item['nrp'] ?? '-').toString()} • Group: ${(item['group'] ?? '-').toString()}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.color,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.teal.withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(color: Colors.teal),
+                                      ),
+                                      child: Text(
+                                        'Premi • $bulanStr',
+                                        style: const TextStyle(
+                                          color: Colors.teal,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Rp $nominalStr',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: Colors.teal.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.teal),
+                            ),
+                            child: const Icon(Icons.chevron_right,
+                                color: Colors.teal, size: 20),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
+  }
+
+  Widget _buildYearHeader({required String title, required int total}) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: Theme.of(context).cardColor,
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedYear -= 1;
+              });
+            },
+            icon: const Icon(Icons.chevron_left),
+            tooltip: 'Tahun sebelumnya',
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  _selectedYear.toString(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$title: Rp ${NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0).format(total)}',
+                  style: const TextStyle(fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedYear += 1;
+              });
+            },
+            icon: const Icon(Icons.chevron_right),
+            tooltip: 'Tahun berikutnya',
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _parseNominal(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is num) return value.toInt();
+    final raw = value.toString().trim();
+    final cleaned = raw.replaceAll('.', '').replaceAll(',', '');
+    return int.tryParse(cleaned) ?? 0;
   }
 
   Widget _buildAddForm() {
@@ -414,7 +848,8 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
                   const SizedBox(height: 16),
                   ListTile(
                     title: const Text('Bulan'),
-                    subtitle: Text(DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
+                    subtitle: Text(
+                        DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
                     trailing: const Icon(Icons.calendar_today),
                     onTap: _selectDate,
                   ),
@@ -466,18 +901,33 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
 
   void _submitPremi() {
     if (_nrpController.text.isEmpty || _nominalController.text.isEmpty) {
-      Get.snackbar('Error', 'Harap isi semua field');
+      showTopToast(
+        'Harap isi semua field',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       return;
     }
 
     final nominal = int.tryParse(_nominalController.text.replaceAll('.', ''));
     if (nominal == null) {
-      Get.snackbar('Error', 'Nominal harus berupa angka');
+      showTopToast(
+        'Nominal harus berupa angka',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       return;
     }
 
     // Here you would submit to Supabase
-    Get.snackbar('Success', 'Insentif premi berhasil ditambahkan');
+    showTopToast(
+      'Insentif premi berhasil ditambahkan',
+      background: Colors.green,
+      foreground: Colors.white,
+      duration: const Duration(seconds: 3),
+    );
     setState(() {
       _showForm = false;
       _clearForm();
@@ -500,15 +950,69 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _fetchInsentifPremi() async {
+  Future<List<Map<String, dynamic>>> _fetchInsentifPremi(
+      {required int year}) async {
     try {
-      final response = await SupabaseService.instance.client
-          .from('insentif_premi')
-          .select('nama, nrp, nominal, bulan, tahun')
-          .order('tahun', ascending: false)
-          .order('bulan', ascending: false)
-          .limit(20);
-      return List<Map<String, dynamic>>.from(response);
+      if (!Get.isRegistered<LoginController>()) {
+        return [];
+      }
+
+      final loginController = Get.find<LoginController>();
+      final user = loginController.currentUser.value;
+      final userId = user?['id'];
+      final nrp = (user?['nrp'] ?? '').toString();
+
+      if (userId == null && nrp.isEmpty) {
+        return [];
+      }
+
+      Future<List<Map<String, dynamic>>?> tryQuery({
+        required Map<String, dynamic> filters,
+        required dynamic tahunValue,
+      }) async {
+        try {
+          dynamic q = SupabaseService.instance.client
+              .from('insentif_premi')
+              .select('nama, nrp, nominal, bulan, tahun')
+              .eq('tahun', tahunValue);
+          for (final entry in filters.entries) {
+            q = q.eq(entry.key, entry.value);
+          }
+          final resp = await q
+              .order('tahun', ascending: false)
+              .order('bulan', ascending: false)
+              .limit(50);
+          return List<Map<String, dynamic>>.from(resp);
+        } catch (_) {
+          return null;
+        }
+      }
+
+      List<Map<String, dynamic>>? result;
+
+      if (userId != null) {
+        result =
+            await tryQuery(filters: {'users_id': userId}, tahunValue: year);
+        result ??=
+            await tryQuery(filters: {'user_id': userId}, tahunValue: year);
+
+        if (result != null && result.isEmpty) {
+          result = await tryQuery(
+                  filters: {'users_id': userId}, tahunValue: year.toString()) ??
+              await tryQuery(
+                  filters: {'user_id': userId}, tahunValue: year.toString());
+        }
+      }
+
+      if (result == null || result.isEmpty) {
+        result = await tryQuery(filters: {'nrp': nrp}, tahunValue: year);
+        if (result != null && result.isEmpty) {
+          result = await tryQuery(
+              filters: {'nrp': nrp}, tahunValue: year.toString());
+        }
+      }
+
+      return result ?? [];
     } catch (e) {
       throw 'Failed to fetch premi incentives: $e';
     }

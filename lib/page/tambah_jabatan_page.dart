@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class TambahJabatanPage extends StatefulWidget {
   const TambahJabatanPage({super.key});
@@ -102,25 +103,25 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                         'Cuti & Eksepsi',
                         [
                           _buildCheckbox(
-                            'Bisa approve cuti',
+                            'Akses Menu Cuti',
                             _canApproveLeave,
                             (value) => setState(
                                 () => _canApproveLeave = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa approve eksepsi',
+                            'Akses Menu Eksepsi',
                             _canApproveException,
                             (value) => setState(
                                 () => _canApproveException = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa lihat semua cuti',
+                            'Lihat Semua Data Cuti',
                             _canViewAllLeave,
                             (value) => setState(
                                 () => _canViewAllLeave = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa lihat semua eksepsi',
+                            'Lihat Semua Data Eksepsi',
                             _canViewAllException,
                             (value) => setState(
                                 () => _canViewAllException = value ?? false),
@@ -135,13 +136,13 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
                         'Insentif',
                         [
                           _buildCheckbox(
-                            'Bisa kelola insentif',
+                            'Kelola Data Insentif',
                             _canManageIncentives,
                             (value) => setState(
                                 () => _canManageIncentives = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa lihat semua insentif',
+                            'Lihat Semua Data Insentif',
                             _canViewAllIncentives,
                             (value) => setState(
                                 () => _canViewAllIncentives = value ?? false),
@@ -153,22 +154,22 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
 
                       // Other Permissions
                       _buildPermissionSection(
-                        'Lainnya',
+                        'Administrasi & Sistem',
                         [
                           _buildCheckbox(
-                            'Bisa kelola ATK',
+                            'Kelola ATK',
                             _canManageATK,
                             (value) =>
                                 setState(() => _canManageATK = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa kelola surat keluar',
+                            'Kelola Surat Keluar',
                             _canManageOutgoingLetters,
                             (value) => setState(() =>
                                 _canManageOutgoingLetters = value ?? false),
                           ),
                           _buildCheckbox(
-                            'Bisa kelola data sistem',
+                            'Kelola Data Master (Pegawai/Jabatan)',
                             _canManageData,
                             (value) =>
                                 setState(() => _canManageData = value ?? false),
@@ -266,11 +267,11 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
         'permissionManagementData': _canManageData,
       });
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'Jabatan berhasil ditambahkan',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
       // Clear form
@@ -289,11 +290,11 @@ class _TambahJabatanPageState extends State<TambahJabatanPage> {
 
       Get.back(); // Go back to previous page
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menambah jabatan: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

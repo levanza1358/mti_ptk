@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/supabase_service.dart';
 import 'login_controller.dart';
+import '../utils/top_toast.dart';
 
 class CutiController extends GetxController
     with GetSingleTickerProviderStateMixin {
@@ -87,6 +88,7 @@ class CutiController extends GetxController
   Future<void> _initializeData() async {
     await loadCurrentUser();
     await loadCutiHistory();
+    await loadImportantReasons();
   }
 
   @override
@@ -115,12 +117,11 @@ class CutiController extends GetxController
             result['sisa_cuti'] ?? 12; // Default 12 hari cuti per tahun
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal memuat data pengguna: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoadingUser.value = false;
@@ -132,18 +133,27 @@ class CutiController extends GetxController
     if (selectedDates.contains(selectedDay)) {
       selectedDates.remove(selectedDay);
     } else {
-      // Check if adding this date would exceed the limit for important leave
+      if (selectedLeaveType.value == 'Cuti Tahunan') {
+        final maxDays = sisaCuti.value;
+        if (selectedDates.length >= maxDays) {
+          showTopToast(
+            'Tanggal cuti melebihi sisa cuti Anda (maksimal $maxDays hari)',
+            background: Colors.red,
+            foreground: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+          return;
+        }
+      }
       if (selectedLeaveType.value == 'Cuti Alasan Penting' &&
           selectedReasonFromDb.value.isNotEmpty) {
         final maxDays =
             importantLeaveMaxDays[selectedReasonFromDb.value] ?? 999;
         if (selectedDates.length >= maxDays) {
-          Get.snackbar(
-            'Peringatan',
-            'Maksimal $maxDays hari untuk cuti alasan "${selectedReasonFromDb.value}"',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.TOP,
+          showTopToast(
+            'Tanggal cuti melebihi dari yang ditentukan (maksimal $maxDays hari)',
+            background: Colors.orange,
+            foreground: Colors.white,
             duration: const Duration(seconds: 3),
           );
           return; // Don't add the date
@@ -168,15 +178,23 @@ class CutiController extends GetxController
         selectedReasonFromDb.value.isNotEmpty) {
       final maxDays = importantLeaveMaxDays[selectedReasonFromDb.value] ?? 999;
       if (selectedDates.length > maxDays) {
-        Get.snackbar(
-          'Peringatan',
-          'Maksimal $maxDays hari untuk cuti alasan "${selectedReasonFromDb.value}". Silakan hapus beberapa tanggal.',
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
+        showTopToast(
+          'Tanggal cuti melebihi dari yang ditentukan (maksimal $maxDays hari). Silakan hapus beberapa tanggal.',
+          background: Colors.orange,
+          foreground: Colors.white,
           duration: const Duration(seconds: 4),
         );
       }
+    }
+    if (selectedLeaveType.value == 'Cuti Tahunan' &&
+        selectedDates.length > sisaCuti.value) {
+      final maxDays = sisaCuti.value;
+      showTopToast(
+        'Tanggal cuti melebihi sisa cuti Anda (maksimal $maxDays hari). Silakan hapus beberapa tanggal.',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 4),
+      );
     }
   }
 
@@ -188,23 +206,21 @@ class CutiController extends GetxController
     }
 
     if (selectedDates.isEmpty) {
-      Get.snackbar(
-        'Peringatan',
+      showTopToast(
         'Silakan pilih tanggal cuti terlebih dahulu',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.orange,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
 
     if (!hasSignature.value || signatureUrl.isEmpty) {
-      Get.snackbar(
-        'Peringatan',
+      showTopToast(
         'Mohon buat tanda tangan terlebih dahulu',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.orange,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -213,12 +229,11 @@ class CutiController extends GetxController
     // Can be configured later based on specific requirements
     if (selectedLeaveType.value == 'Cuti Alasan Penting' &&
         selectedReasonFromDb.value.isEmpty) {
-      Get.snackbar(
-        'Peringatan',
+      showTopToast(
         'Pilih alasan penting terlebih dahulu',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -228,12 +243,11 @@ class CutiController extends GetxController
     // Only validate annual leave balance for annual leave
     if (selectedLeaveType.value == 'Cuti Tahunan' &&
         lamaCuti > sisaCuti.value) {
-      Get.snackbar(
-        'Peringatan',
+      showTopToast(
         'Jumlah hari cuti ($lamaCuti) melebihi sisa cuti Anda (${sisaCuti.value})',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -281,13 +295,11 @@ class CutiController extends GetxController
           ? 'Pengajuan cuti berhasil disubmit!\nSisa cuti Anda: ${sisaCuti.value - lamaCuti} hari'
           : 'Pengajuan cuti alasan penting berhasil disubmit!\nSisa cuti tahunan tetap: ${sisaCuti.value} hari';
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         message,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 4),
+        background: Colors.green.withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
       // Clear form
@@ -300,12 +312,11 @@ class CutiController extends GetxController
       // Switch to history tab to show the new submission
       tabController.animateTo(1);
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal mengajukan cuti: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red.withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -322,10 +333,11 @@ class CutiController extends GetxController
 
   Future<void> saveSignature() async {
     if (signatureController.isEmpty) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Tanda tangan masih kosong',
-        snackPosition: SnackPosition.BOTTOM,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -338,10 +350,11 @@ class CutiController extends GetxController
         await uploadSignature();
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menyimpan tanda tangan: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -366,10 +379,11 @@ class CutiController extends GetxController
         signatureUrl.value = publicUrl;
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal upload tanda tangan: $e',
-        snackPosition: SnackPosition.BOTTOM,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -445,10 +459,11 @@ class CutiController extends GetxController
                       child: ElevatedButton.icon(
                         onPressed: () async {
                           if (signatureController.isEmpty) {
-                            Get.snackbar(
-                              'Error',
+                            showTopToast(
                               'Mohon buat tanda tangan terlebih dahulu',
-                              snackPosition: SnackPosition.BOTTOM,
+                              background: Colors.orange,
+                              foreground: Colors.white,
+                              duration: const Duration(seconds: 3),
                             );
                             return;
                           }
@@ -496,22 +511,21 @@ class CutiController extends GetxController
       // Refresh data
       await loadCutiHistory();
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         newLockStatus
             ? 'Cuti berhasil dikunci. Data tidak dapat dihapus.'
             : 'Kunci cuti berhasil dibuka. Data dapat dihapus kembali.',
-        backgroundColor: newLockStatus ? Colors.orange : Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: (newLockStatus ? Colors.orange : Colors.green)
+            .withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal mengubah status kunci cuti: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -531,12 +545,11 @@ class CutiController extends GetxController
       final daysToRestore = dates.length;
 
       if (daysToRestore == 0) {
-        Get.snackbar(
-          'Error',
+        showTopToast(
           'Tidak dapat menghitung hari cuti yang akan dikembalikan',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
+          background: Colors.red.withValues(alpha: 0.9),
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
         );
         return;
       }
@@ -558,12 +571,11 @@ class CutiController extends GetxController
           }
         } catch (e) {
           // Inform the user but continue with deletion
-          Get.snackbar(
-            'Peringatan',
+          showTopToast(
             'Gagal menghapus file tanda tangan dari penyimpanan: $e',
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            snackPosition: SnackPosition.TOP,
+            background: Colors.orange.withValues(alpha: 0.9),
+            foreground: Colors.white,
+            duration: const Duration(seconds: 3),
           );
         }
       }
@@ -602,20 +614,18 @@ class CutiController extends GetxController
           ? 'Cuti berhasil dihapus dan $daysToRestore hari cuti dikembalikan'
           : 'Cuti berhasil dihapus (kuota cuti tidak dikembalikan)';
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         message,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.green.withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menghapus cuti: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red.withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -626,12 +636,11 @@ class CutiController extends GetxController
     final isLocked = cutiData['kunci_cuti'] ?? false;
 
     if (isLocked) {
-      Get.snackbar(
-        'Tidak Dapat Dihapus',
+      showTopToast(
         'Cuti ini sudah dikunci dan tidak dapat dihapus',
-        backgroundColor: Colors.orange,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.orange.withValues(alpha: 0.9),
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return;
     }
@@ -892,12 +901,11 @@ class CutiController extends GetxController
         _filterCutiHistoryByYear();
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal memuat history cuti: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoadingHistory.value = false;

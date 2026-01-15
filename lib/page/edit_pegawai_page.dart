@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class EditPegawaiPage extends StatefulWidget {
   const EditPegawaiPage({super.key});
@@ -10,14 +11,17 @@ class EditPegawaiPage extends StatefulWidget {
 }
 
 class _EditPegawaiPageState extends State<EditPegawaiPage> {
-  final _formKey = GlobalKey<FormState>();
   final _nrpController = TextEditingController();
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   String? _selectedEmployeeId;
   String? _selectedGroup;
   String? _selectedJabatan;
+  String? _phoneColumn;
   List<Map<String, dynamic>> _employees = [];
   List<Map<String, dynamic>> _groups = [];
   List<Map<String, dynamic>> _jabatan = [];
@@ -35,16 +39,44 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
     _nrpController.dispose();
     _nameController.dispose();
     _passwordController.dispose();
+    _phoneController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchEmployeesWithOptionalPhone() async {
+    const baseColumns = 'id, nrp, name, jabatan, "group"';
+    const phoneCandidates = <String>[
+      'kontak',
+      'telepon',
+      'no_hp',
+      'nomor_hp',
+      'phone',
+    ];
+
+    for (final col in phoneCandidates) {
+      try {
+        final resp = await SupabaseService.instance.client
+            .from('users')
+            .select('$baseColumns, $col')
+            .order('name');
+        _phoneColumn = col;
+        return List<Map<String, dynamic>>.from(resp);
+      } catch (_) {}
+    }
+
+    _phoneColumn = null;
+    final resp = await SupabaseService.instance.client
+        .from('users')
+        .select(baseColumns)
+        .order('name');
+    return List<Map<String, dynamic>>.from(resp);
   }
 
   Future<void> _loadInitialData() async {
     try {
       // Load employees, groups, and jabatan
-      final employeesResponse = await SupabaseService.instance.client
-          .from('users')
-          .select('id, nrp, name, jabatan, "group"')
-          .order('name');
+      final employeesResponse = await _fetchEmployeesWithOptionalPhone();
 
       final groupsResponse = await SupabaseService.instance.client
           .from('group')
@@ -56,35 +88,85 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
           .select('id, nama')
           .order('nama');
 
+      final employees = List<Map<String, dynamic>>.from(employeesResponse);
+      employees.sort((a, b) {
+        final an = (a['name'] ?? '').toString().toLowerCase();
+        final bn = (b['name'] ?? '').toString().toLowerCase();
+        return an.compareTo(bn);
+      });
+
       setState(() {
-        _employees = List<Map<String, dynamic>>.from(employeesResponse);
+        _employees = employees;
         _groups = List<Map<String, dynamic>>.from(groupsResponse);
         _jabatan = List<Map<String, dynamic>>.from(jabatanResponse);
         _isInitialLoading = false;
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data: $e');
+      showTopToast(
+        'Gagal memuat data: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       setState(() {
         _isInitialLoading = false;
       });
     }
   }
 
-  void _onEmployeeSelected(String? employeeId) {
-    if (employeeId == null) {
-      _clearForm();
-      return;
+  String? _normalizeIdFromList({
+    required dynamic rawValue,
+    required List<Map<String, dynamic>> items,
+    required String idKey,
+    required String labelKey,
+  }) {
+    final raw = (rawValue ?? '').toString().trim();
+    if (raw.isEmpty) return null;
+
+    for (final item in items) {
+      if (item[idKey]?.toString() == raw) {
+        return raw;
+      }
     }
 
-    final employee =
-        _employees.firstWhere((emp) => emp['id'].toString() == employeeId);
+    for (final item in items) {
+      final label = (item[labelKey] ?? '').toString().trim();
+      if (label.isNotEmpty && label.toLowerCase() == raw.toLowerCase()) {
+        return item[idKey]?.toString();
+      }
+    }
+
+    return null;
+  }
+
+  void _onEmployeeTapped(Map<String, dynamic> employee) {
+    FocusScope.of(context).unfocus();
+    final selectedId = (employee['id'] ?? '').toString();
+    final normalizedGroup = _normalizeIdFromList(
+      rawValue: employee['group'],
+      items: _groups,
+      idKey: 'id',
+      labelKey: 'nama',
+    );
+    final normalizedJabatan = _normalizeIdFromList(
+      rawValue: employee['jabatan'],
+      items: _jabatan,
+      idKey: 'id',
+      labelKey: 'nama',
+    );
+    final phoneValue = _phoneColumn == null
+        ? null
+        : (employee[_phoneColumn] ?? employee[_phoneColumn!])?.toString();
     setState(() {
-      _selectedEmployeeId = employeeId;
+      _selectedEmployeeId = selectedId;
       _nrpController.text = employee['nrp'] ?? '';
       _nameController.text = employee['name'] ?? '';
-      _selectedGroup = employee['group']?.toString();
-      _selectedJabatan = employee['jabatan']?.toString();
+      _passwordController.clear();
+      _phoneController.text = phoneValue ?? '';
+      _selectedGroup = normalizedGroup;
+      _selectedJabatan = normalizedJabatan;
     });
+    _openEditSheet(employeeId: selectedId);
   }
 
   void _clearForm() {
@@ -93,9 +175,195 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
       _nrpController.clear();
       _nameController.clear();
       _passwordController.clear();
+      _phoneController.clear();
       _selectedGroup = null;
       _selectedJabatan = null;
     });
+  }
+
+  String _resolveGroupLabel(dynamic groupId) {
+    final id = (groupId ?? '').toString();
+    if (id.isEmpty) return '-';
+    for (final g in _groups) {
+      if (g['id']?.toString() == id) {
+        return (g['nama'] ?? id).toString();
+      }
+    }
+    return id;
+  }
+
+  String _resolveJabatanLabel(dynamic jabatanId) {
+    final id = (jabatanId ?? '').toString();
+    if (id.isEmpty) return '-';
+    for (final j in _jabatan) {
+      if (j['id']?.toString() == id) {
+        return (j['nama'] ?? id).toString();
+      }
+    }
+    return id;
+  }
+
+  Future<void> _openEditSheet({required String employeeId}) async {
+    final formKey = GlobalKey<FormState>();
+    final theme = Theme.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Edit Data Pegawai',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nrpController,
+                      decoration: const InputDecoration(
+                        labelText: 'NRP',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.badge),
+                      ),
+                      enabled: false,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Lengkap',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Nama tidak boleh kosong';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password Baru (Opsional)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                        hintText:
+                            'Kosongkan jika tidak ingin mengubah password',
+                      ),
+                      obscureText: true,
+                    ),
+                    if (_phoneColumn != null) ...[
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nomor HP / WA',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedGroup,
+                      decoration: const InputDecoration(
+                        labelText: 'Grup',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.group),
+                      ),
+                      items: _groups.map((group) {
+                        return DropdownMenuItem<String>(
+                          value: group['id'].toString(),
+                          child: Text(group['nama'] ?? 'Unknown'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        _selectedGroup = value;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedJabatan,
+                      decoration: const InputDecoration(
+                        labelText: 'Jabatan',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.work),
+                      ),
+                      items: _jabatan.map((jabatan) {
+                        return DropdownMenuItem<String>(
+                          value: jabatan['id'].toString(),
+                          child: Text(jabatan['nama'] ?? 'Unknown'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        _selectedJabatan = value;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => _submitForm(
+                                      employeeId: employeeId,
+                                      formKey: formKey,
+                                    ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Simpan',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -106,6 +374,20 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
       );
     }
 
+    final filteredEmployees = _employees.where((employee) {
+      final name = (employee['name'] ?? '').toString().toLowerCase();
+      final nrp = (employee['nrp'] ?? '').toString().toLowerCase();
+      final q = _searchQuery.toLowerCase().trim();
+      if (q.isEmpty) return true;
+      return name.contains(q) || nrp.contains(q);
+    }).toList();
+
+    filteredEmployees.sort((a, b) {
+      final an = (a['name'] ?? '').toString().toLowerCase();
+      final bn = (b['name'] ?? '').toString().toLowerCase();
+      return an.compareTo(bn);
+    });
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -115,202 +397,136 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
         ),
         title: const Text('Edit Pegawai'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Edit Data Pegawai',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pilih pegawai yang ingin diedit dan perbarui datanya',
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // Employee Selection
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pilih Pegawai',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        initialValue: _selectedEmployeeId,
-                        decoration: const InputDecoration(
-                          labelText: 'Cari Pegawai',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
-                        ),
-                        items: _employees.map((employee) {
-                          return DropdownMenuItem<String>(
-                            value: employee['id'].toString(),
-                            child: Text(
-                                '${employee['name']} (${employee['nrp']})'),
-                          );
-                        }).toList(),
-                        onChanged: _onEmployeeSelected,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Pegawai harus dipilih';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Edit Data Pegawai',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Cari pegawai berdasarkan nama, lalu tap untuk edit',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cari berdasarkan nama',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ],
               ),
+            ),
+          ),
+          if (filteredEmployees.isEmpty)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Text('Pegawai tidak ditemukan')),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              sliver: SliverList.separated(
+                itemCount: filteredEmployees.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final employee = filteredEmployees[index];
+                  final id = (employee['id'] ?? '').toString();
+                  final isSelected = id == _selectedEmployeeId;
+                  final name = (employee['name'] ?? '-').toString();
+                  final nrp = (employee['nrp'] ?? '-').toString();
+                  final groupLabel =
+                      _resolveGroupLabel(employee['group'] ?? '-');
+                  final jabatanLabel =
+                      _resolveJabatanLabel(employee['jabatan'] ?? '-');
 
-              if (_selectedEmployeeId != null) ...[
-                const SizedBox(height: 16),
-
-                // Edit Form
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        // NRP Field (disabled)
-                        TextFormField(
-                          controller: _nrpController,
-                          decoration: const InputDecoration(
-                            labelText: 'NRP',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.badge),
-                          ),
-                          enabled: false, // NRP cannot be changed
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Name Field
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Lengkap',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.person),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Nama tidak boleh kosong';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Password Field (optional)
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Password Baru (Opsional)',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.lock),
-                            hintText:
-                                'Kosongkan jika tidak ingin mengubah password',
-                          ),
-                          obscureText: true,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Group Dropdown
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedGroup,
-                          decoration: const InputDecoration(
-                            labelText: 'Grup',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.group),
-                          ),
-                          items: _groups.map((group) {
-                            return DropdownMenuItem<String>(
-                              value: group['id'].toString(),
-                              child: Text(group['nama'] ?? 'Unknown'),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedGroup = value;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Jabatan Dropdown
-                        DropdownButtonFormField<String>(
-                          initialValue: _selectedJabatan,
-                          decoration: const InputDecoration(
-                            labelText: 'Jabatan',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.work),
-                          ),
-                          items: _jabatan.map((jabatan) {
-                            return DropdownMenuItem<String>(
-                              value: jabatan['id'].toString(),
-                              child: Text(jabatan['nama'] ?? 'Unknown'),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedJabatan = value;
-                            });
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Action Buttons
-                        Row(
+                  return Material(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(8),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => _onEmployeeTapped(employee),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Row(
                           children: [
+                            const Icon(Icons.person, size: 20),
+                            const SizedBox(width: 10),
                             Expanded(
-                              child: OutlinedButton(
-                                onPressed: _clearForm,
-                                child: const Text('Batal'),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'NRP: $nrp • Grup: $groupLabel • Jabatan: $jabatanLabel',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white)
-                                    : const Text(
-                                        'Simpan Perubahan',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                              ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.edit,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _submitForm({
+    required String employeeId,
+    required GlobalKey<FormState> formKey,
+  }) async {
+    if (employeeId.isEmpty) {
+      showTopToast(
+        'Pegawai tidak valid',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
+    if (!formKey.currentState!.validate()) {
       return;
     }
 
@@ -330,26 +546,48 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
         updateData['password'] = _passwordController.text;
       }
 
+      if (_phoneColumn != null) {
+        updateData[_phoneColumn!] = _phoneController.text.trim();
+      }
+
       await SupabaseService.instance.client
           .from('users')
           .update(updateData)
-          .eq('id', _selectedEmployeeId!);
+          .eq('id', employeeId);
 
-      Get.snackbar(
-        'Berhasil',
+      setState(() {
+        final idx =
+            _employees.indexWhere((e) => e['id'].toString() == employeeId);
+        if (idx >= 0) {
+          _employees[idx] = {
+            ..._employees[idx],
+            'name': updateData['name'],
+            'jabatan': updateData['jabatan'],
+            'group': updateData['group'],
+            if (_phoneColumn != null) _phoneColumn!: updateData[_phoneColumn!],
+          };
+        }
+      });
+
+      showTopToast(
         'Data pegawai berhasil diperbarui',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
+
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
 
       // Clear form after successful update
       _clearForm();
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal memperbarui data pegawai: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

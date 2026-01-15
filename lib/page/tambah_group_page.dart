@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class TambahGroupPage extends StatefulWidget {
   const TambahGroupPage({super.key});
@@ -140,22 +141,22 @@ class _TambahGroupPageState extends State<TambahGroupPage> {
         'nama': _groupNameController.text.trim(),
       });
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'Grup berhasil ditambahkan',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
       // Clear form
       _groupNameController.clear();
       Get.back(); // Go back to previous page
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menambah grup: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

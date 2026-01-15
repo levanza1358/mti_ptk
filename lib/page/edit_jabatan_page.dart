@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class EditJabatanPage extends StatefulWidget {
   const EditJabatanPage({super.key});
@@ -12,8 +11,9 @@ class EditJabatanPage extends StatefulWidget {
 }
 
 class _EditJabatanPageState extends State<EditJabatanPage> {
-  final _formKey = GlobalKey<FormState>();
   final _jabatanNameController = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   String? _selectedJabatanId;
   List<Map<String, dynamic>> _jabatan = [];
@@ -40,6 +40,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
   @override
   void dispose() {
     _jabatanNameController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -51,25 +52,33 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
               'id, nama, permissionCuti, permissionEksepsi, permissionAllCuti, permissionAllEksepsi, permissionInsentif, permissionAtk, permissionAllInsentif, permissionSuratKeluar, permissionManagementData')
           .order('nama');
 
+      final jabatan = List<Map<String, dynamic>>.from(response);
+      jabatan.sort((a, b) {
+        final an = (a['nama'] ?? '').toString().toLowerCase();
+        final bn = (b['nama'] ?? '').toString().toLowerCase();
+        return an.compareTo(bn);
+      });
+
       setState(() {
-        _jabatan = List<Map<String, dynamic>>.from(response);
+        _jabatan = jabatan;
         _isInitialLoading = false;
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data jabatan: $e');
+      showTopToast(
+        'Gagal memuat data jabatan: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       setState(() {
         _isInitialLoading = false;
       });
     }
   }
 
-  void _onJabatanSelected(String? jabatanId) {
-    if (jabatanId == null) {
-      _clearForm();
-      return;
-    }
-
-    final jabatan = _jabatan.firstWhere((j) => j['id'].toString() == jabatanId);
+  Future<void> _onJabatanTapped(Map<String, dynamic> jabatan) async {
+    FocusScope.of(context).unfocus();
+    final jabatanId = (jabatan['id'] ?? '').toString();
     setState(() {
       _selectedJabatanId = jabatanId;
       _jabatanNameController.text = jabatan['nama'] ?? '';
@@ -83,6 +92,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
       _canManageOutgoingLetters = jabatan['permissionSuratKeluar'] ?? false;
       _canManageData = jabatan['permissionManagementData'] ?? false;
     });
+    await _openEditSheet(jabatanId: jabatanId);
   }
 
   void _clearForm() {
@@ -99,6 +109,204 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
       _canManageOutgoingLetters = false;
       _canManageData = false;
     });
+  }
+
+  Future<void> _openEditSheet({required String jabatanId}) async {
+    final formKey = GlobalKey<FormState>();
+    final theme = Theme.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Edit Data Jabatan',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _jabatanNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nama Jabatan',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.work),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Nama jabatan tidak boleh kosong';
+                            }
+                            if (value.length < 2) {
+                              return 'Nama jabatan minimal 2 karakter';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Permissions',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPermissionSection(
+                          'Cuti & Eksepsi',
+                          [
+                            _buildCheckbox(
+                              'Akses Menu Cuti',
+                              _canApproveLeave,
+                              (value) => setModalState(
+                                  () => _canApproveLeave = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Akses Menu Eksepsi',
+                              _canApproveException,
+                              (value) => setModalState(
+                                  () => _canApproveException = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Lihat Semua Data Cuti',
+                              _canViewAllLeave,
+                              (value) => setModalState(
+                                  () => _canViewAllLeave = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Lihat Semua Data Eksepsi',
+                              _canViewAllException,
+                              (value) => setModalState(
+                                  () => _canViewAllException = value ?? false),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPermissionSection(
+                          'Insentif',
+                          [
+                            _buildCheckbox(
+                              'Kelola Data Insentif',
+                              _canManageIncentives,
+                              (value) => setModalState(
+                                  () => _canManageIncentives = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Lihat Semua Data Insentif',
+                              _canViewAllIncentives,
+                              (value) => setModalState(
+                                  () => _canViewAllIncentives = value ?? false),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPermissionSection(
+                          'Administrasi & Sistem',
+                          [
+                            _buildCheckbox(
+                              'Kelola ATK',
+                              _canManageATK,
+                              (value) => setModalState(
+                                  () => _canManageATK = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Kelola Surat Keluar',
+                              _canManageOutgoingLetters,
+                              (value) => setModalState(() =>
+                                  _canManageOutgoingLetters = value ?? false),
+                            ),
+                            _buildCheckbox(
+                              'Kelola Data Master (Pegawai/Jabatan)',
+                              _canManageData,
+                              (value) => setModalState(
+                                  () => _canManageData = value ?? false),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.warning, color: Colors.orange),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Perubahan permissions akan mempengaruhi semua pengguna dengan jabatan ini.',
+                                  style: TextStyle(color: Colors.orange),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => Navigator.of(context).pop(),
+                                child: const Text('Batal'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _isLoading
+                                    ? null
+                                    : () => _submitForm(
+                                          jabatanId: jabatanId,
+                                          formKey: formKey,
+                                        ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: theme.primaryColor,
+                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Simpan',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -118,249 +326,129 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
         ),
         title: const Text('Edit Jabatan'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Edit Data Jabatan',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pilih jabatan yang ingin diedit dan perbarui datanya',
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // Jabatan Selection
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pilih Jabatan',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _selectedJabatanId,
-                        decoration: const InputDecoration(
-                          labelText: 'Cari Jabatan',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
-                        ),
-                        items: _jabatan.map((jabatan) {
-                          return DropdownMenuItem<String>(
-                            value: jabatan['id'].toString(),
-                            child: Text(jabatan['nama'] ?? 'Unknown'),
-                          );
-                        }).toList(),
-                        onChanged: _onJabatanSelected,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Jabatan harus dipilih';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Edit Data Jabatan',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Cari jabatan, lalu tap untuk edit',
+                    style: TextStyle(
+                        color: Theme.of(context).textTheme.bodyMedium?.color),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cari berdasarkan nama jabatan',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ],
               ),
+            ),
+          ),
+          Builder(
+            builder: (context) {
+              final q = _searchQuery.toLowerCase().trim();
+              final filtered = _jabatan.where((j) {
+                final name = (j['nama'] ?? '').toString().toLowerCase();
+                if (q.isEmpty) return true;
+                return name.contains(q);
+              }).toList()
+                ..sort((a, b) {
+                  final an = (a['nama'] ?? '').toString().toLowerCase();
+                  final bn = (b['nama'] ?? '').toString().toLowerCase();
+                  return an.compareTo(bn);
+                });
 
-              if (_selectedJabatanId != null) ...[
-                const SizedBox(height: 16),
+              if (filtered.isEmpty) {
+                return const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Jabatan tidak ditemukan')),
+                );
+              }
 
-                // Edit Form
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Jabatan Name
-                        TextFormField(
-                          controller: _jabatanNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Jabatan',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.work),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Nama jabatan tidak boleh kosong';
-                            }
-                            if (value.length < 2) {
-                              return 'Nama jabatan minimal 2 karakter';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Permissions Section
-                        const Text(
-                          'Permissions',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Leave Permissions
-                        _buildPermissionSection(
-                          'Cuti & Eksepsi',
-                          [
-                            _buildCheckbox(
-                              'Bisa approve cuti',
-                              _canApproveLeave,
-                              (value) => setState(
-                                  () => _canApproveLeave = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa approve eksepsi',
-                              _canApproveException,
-                              (value) => setState(
-                                  () => _canApproveException = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa lihat semua cuti',
-                              _canViewAllLeave,
-                              (value) => setState(
-                                  () => _canViewAllLeave = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa lihat semua eksepsi',
-                              _canViewAllException,
-                              (value) => setState(
-                                  () => _canViewAllException = value ?? false),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Incentive Permissions
-                        _buildPermissionSection(
-                          'Insentif',
-                          [
-                            _buildCheckbox(
-                              'Bisa kelola insentif',
-                              _canManageIncentives,
-                              (value) => setState(
-                                  () => _canManageIncentives = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa lihat semua insentif',
-                              _canViewAllIncentives,
-                              (value) => setState(
-                                  () => _canViewAllIncentives = value ?? false),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Other Permissions
-                        _buildPermissionSection(
-                          'Lainnya',
-                          [
-                            _buildCheckbox(
-                              'Bisa kelola ATK',
-                              _canManageATK,
-                              (value) => setState(
-                                  () => _canManageATK = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa kelola surat keluar',
-                              _canManageOutgoingLetters,
-                              (value) => setState(() =>
-                                  _canManageOutgoingLetters = value ?? false),
-                            ),
-                            _buildCheckbox(
-                              'Bisa kelola data sistem',
-                              _canManageData,
-                              (value) => setState(
-                                  () => _canManageData = value ?? false),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Warning
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                sliver: SliverList.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final jabatan = filtered[index];
+                    final id = (jabatan['id'] ?? '').toString();
+                    final isSelected = id == _selectedJabatanId;
+                    final name = (jabatan['nama'] ?? '-').toString();
+                    return Material(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _onJabatanTapped(jabatan),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
                             children: [
-                              Icon(Icons.warning, color: Colors.orange),
-                              SizedBox(width: 8),
+                              const Icon(Icons.work, size: 20),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Perubahan permissions akan mempengaruhi semua pengguna dengan jabatan ini.',
-                                  style: TextStyle(color: Colors.orange),
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.tune,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ],
                           ),
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // Action Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _clearForm,
-                                child: const Text('Batal'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange,
-                                ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white)
-                                    : const Text(
-                                        'Simpan Perubahan',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ],
+              );
+            },
           ),
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildPermissionSection(String title, List<Widget> checkboxes) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
+        color: isDark
+            ? Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.5)
+            : Colors.grey.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -388,8 +476,11 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     );
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _submitForm({
+    required String jabatanId,
+    required GlobalKey<FormState> formKey,
+  }) async {
+    if (!formKey.currentState!.validate()) {
       return;
     }
 
@@ -398,7 +489,7 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
     });
 
     try {
-      await SupabaseService.instance.client.from('jabatan').update({
+      final updateData = {
         'nama': _jabatanNameController.text.trim(),
         'permissionCuti': _canApproveLeave,
         'permissionEksepsi': _canApproveException,
@@ -409,25 +500,45 @@ class _EditJabatanPageState extends State<EditJabatanPage> {
         'permissionAllInsentif': _canViewAllIncentives,
         'permissionSuratKeluar': _canManageOutgoingLetters,
         'permissionManagementData': _canManageData,
-      }).eq('id', _selectedJabatanId!);
+      };
 
-      Get.snackbar(
-        'Berhasil',
+      await SupabaseService.instance.client
+          .from('jabatan')
+          .update(updateData)
+          .eq('id', jabatanId);
+
+      setState(() {
+        final idx = _jabatan.indexWhere((j) => j['id'].toString() == jabatanId);
+        if (idx >= 0) {
+          _jabatan[idx] = {
+            ..._jabatan[idx],
+            ...updateData,
+          };
+          _jabatan.sort((a, b) {
+            final an = (a['nama'] ?? '').toString().toLowerCase();
+            final bn = (b['nama'] ?? '').toString().toLowerCase();
+            return an.compareTo(bn);
+          });
+        }
+      });
+
+      showTopToast(
         'Data jabatan berhasil diperbarui',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
-      // Refresh the jabatan list
-      await _loadJabatan();
-      // Clear form after successful update
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       _clearForm();
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal memperbarui data jabatan: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

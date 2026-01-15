@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class EditGroupPage extends StatefulWidget {
   const EditGroupPage({super.key});
@@ -12,8 +13,9 @@ class EditGroupPage extends StatefulWidget {
 }
 
 class _EditGroupPageState extends State<EditGroupPage> {
-  final _formKey = GlobalKey<FormState>();
   final _groupNameController = TextEditingController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   String? _selectedGroupId;
   List<Map<String, dynamic>> _groups = [];
@@ -29,6 +31,7 @@ class _EditGroupPageState extends State<EditGroupPage> {
   @override
   void dispose() {
     _groupNameController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -39,29 +42,38 @@ class _EditGroupPageState extends State<EditGroupPage> {
           .select('id, nama')
           .order('nama');
 
+      final groups = List<Map<String, dynamic>>.from(response);
+      groups.sort((a, b) {
+        final an = (a['nama'] ?? '').toString().toLowerCase();
+        final bn = (b['nama'] ?? '').toString().toLowerCase();
+        return an.compareTo(bn);
+      });
+
       setState(() {
-        _groups = List<Map<String, dynamic>>.from(response);
+        _groups = groups;
         _isInitialLoading = false;
       });
     } catch (e) {
-      Get.snackbar('Error', 'Gagal memuat data grup: $e');
+      showTopToast(
+        'Gagal memuat data grup: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       setState(() {
         _isInitialLoading = false;
       });
     }
   }
 
-  void _onGroupSelected(String? groupId) {
-    if (groupId == null) {
-      _clearForm();
-      return;
-    }
-
-    final group = _groups.firstWhere((g) => g['id'].toString() == groupId);
+  Future<void> _onGroupTapped(Map<String, dynamic> group) async {
+    FocusScope.of(context).unfocus();
+    final groupId = (group['id'] ?? '').toString();
     setState(() {
       _selectedGroupId = groupId;
       _groupNameController.text = group['nama'] ?? '';
     });
+    await _openEditSheet(groupId: groupId);
   }
 
   void _clearForm() {
@@ -69,6 +81,122 @@ class _EditGroupPageState extends State<EditGroupPage> {
       _selectedGroupId = null;
       _groupNameController.clear();
     });
+  }
+
+  Future<void> _openEditSheet({required String groupId}) async {
+    final formKey = GlobalKey<FormState>();
+    final theme = Theme.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Edit Data Grup',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _groupNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nama Grup',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.group),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Nama grup tidak boleh kosong';
+                        }
+                        if (value.length < 2) {
+                          return 'Nama grup minimal 2 karakter';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Perubahan nama grup akan mempengaruhi semua pengguna yang terkait dengan grup ini.',
+                              style: TextStyle(color: Colors.orange),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.of(context).pop(),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => _submitForm(
+                                      groupId: groupId,
+                                      formKey: formKey,
+                                    ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: theme.primaryColor,
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Simpan',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -88,152 +216,122 @@ class _EditGroupPageState extends State<EditGroupPage> {
         ),
         title: const Text('Edit Grup'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Edit Data Grup',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pilih grup yang ingin diedit dan perbarui namanya',
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-
-              // Group Selection
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Pilih Grup',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: _selectedGroupId,
-                        decoration: const InputDecoration(
-                          labelText: 'Cari Grup',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.search),
-                        ),
-                        items: _groups.map((group) {
-                          return DropdownMenuItem<String>(
-                            value: group['id'].toString(),
-                            child: Text(group['nama'] ?? 'Unknown'),
-                          );
-                        }).toList(),
-                        onChanged: _onGroupSelected,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Grup harus dipilih';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Edit Data Grup',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Cari grup, lalu tap untuk edit',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Cari berdasarkan nama grup',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ],
               ),
+            ),
+          ),
+          Builder(
+            builder: (context) {
+              final q = _searchQuery.toLowerCase().trim();
+              final filtered = _groups.where((g) {
+                final name = (g['nama'] ?? '').toString().toLowerCase();
+                if (q.isEmpty) return true;
+                return name.contains(q);
+              }).toList()
+                ..sort((a, b) {
+                  final an = (a['nama'] ?? '').toString().toLowerCase();
+                  final bn = (b['nama'] ?? '').toString().toLowerCase();
+                  return an.compareTo(bn);
+                });
 
-              if (_selectedGroupId != null) ...[
-                const SizedBox(height: 16),
+              if (filtered.isEmpty) {
+                return const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Grup tidak ditemukan')),
+                );
+              }
 
-                // Edit Form
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _groupNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Nama Grup',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.group),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Nama grup tidak boleh kosong';
-                            }
-                            if (value.length < 2) {
-                              return 'Nama grup minimal 2 karakter';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
+              return SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                sliver: SliverList.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final group = filtered[index];
+                    final id = (group['id'] ?? '').toString();
+                    final isSelected = id == _selectedGroupId;
+                    final name = (group['nama'] ?? '-').toString();
+                    return Material(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => _onGroupTapped(group),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          child: Row(
                             children: [
-                              Icon(Icons.warning, color: Colors.orange),
-                              SizedBox(width: 8),
+                              const Icon(Icons.group, size: 20),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  'Perubahan nama grup akan mempengaruhi semua pengguna yang terkait dengan grup ini.',
-                                  style: TextStyle(color: Colors.orange),
+                                  name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.edit,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 24),
-
-                        // Action Buttons
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _clearForm,
-                                child: const Text('Batal'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                ),
-                                child: _isLoading
-                                    ? const CircularProgressIndicator(
-                                        color: Colors.white)
-                                    : const Text(
-                                        'Simpan Perubahan',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ],
+              );
+            },
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _submitForm({
+    required String groupId,
+    required GlobalKey<FormState> formKey,
+  }) async {
+    if (!formKey.currentState!.validate()) {
       return;
     }
 
@@ -244,26 +342,40 @@ class _EditGroupPageState extends State<EditGroupPage> {
     try {
       await SupabaseService.instance.client
           .from('group')
-          .update({'nama': _groupNameController.text.trim()}).eq(
-              'id', _selectedGroupId!);
+          .update({'nama': _groupNameController.text.trim()}).eq('id', groupId);
 
-      Get.snackbar(
-        'Berhasil',
+      setState(() {
+        final idx = _groups.indexWhere((g) => g['id'].toString() == groupId);
+        if (idx >= 0) {
+          _groups[idx] = {
+            ..._groups[idx],
+            'nama': _groupNameController.text.trim(),
+          };
+          _groups.sort((a, b) {
+            final an = (a['nama'] ?? '').toString().toLowerCase();
+            final bn = (b['nama'] ?? '').toString().toLowerCase();
+            return an.compareTo(bn);
+          });
+        }
+      });
+
+      showTopToast(
         'Nama grup berhasil diperbarui',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
 
-      // Refresh the groups list
-      await _loadGroups();
-      // Clear form after successful update
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       _clearForm();
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal memperbarui nama grup: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       setState(() {

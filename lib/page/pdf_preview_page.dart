@@ -15,6 +15,7 @@ import '../utils/web_download.dart';
 import '../controller/cuti_controller.dart';
 import '../controller/login_controller.dart';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class PdfPreviewPage extends StatefulWidget {
   final String title;
@@ -43,6 +44,19 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
   Future<void> _loadPdf() async {
     try {
       final pdfData = await widget.pdfGenerator();
+      if (pdfData.isEmpty) {
+        if (mounted) {
+          _isLoading = false;
+          showTopToast(
+            'PDF kosong atau gagal dibuat',
+            background: Colors.red,
+            foreground: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+          Get.back();
+        }
+        return;
+      }
       if (mounted) {
         setState(() {
           _pdfData = pdfData;
@@ -54,7 +68,12 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
         setState(() {
           _isLoading = false;
         });
-        Get.snackbar('Error', 'Gagal memuat PDF: $e');
+        showTopToast(
+          'Gagal memuat PDF: $e',
+          background: Colors.red,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
         Get.back();
       }
     }
@@ -128,9 +147,19 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
         bytes: _pdfData!,
         filename: '${widget.title.replaceAll(' ', '_')}.pdf',
       );
-      Get.snackbar('Berhasil', 'PDF berhasil didownload');
+      showTopToast(
+        'PDF berhasil didownload',
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     } catch (e) {
-      Get.snackbar('Error', 'Gagal download PDF: $e');
+      showTopToast(
+        'Gagal download PDF: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -143,7 +172,12 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
         name: widget.title,
       );
     } catch (e) {
-      Get.snackbar('Error', 'Gagal print PDF: $e');
+      showTopToast(
+        'Gagal print PDF: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 
@@ -156,7 +190,12 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
         filename: '${widget.title.replaceAll(' ', '_')}.pdf',
       );
     } catch (e) {
-      Get.snackbar('Error', 'Gagal share PDF: $e');
+      showTopToast(
+        'Gagal share PDF: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     }
   }
 }
@@ -907,11 +946,11 @@ class PdfCutiController extends GetxController {
 
       return result;
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal membuat PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return Uint8List(0);
     } finally {
@@ -1603,11 +1642,11 @@ class PdfCutiController extends GetxController {
 
       return pdf.save();
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal membuat PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
       return Uint8List(0);
     } finally {
@@ -1631,11 +1670,11 @@ class PdfCutiController extends GetxController {
 
       if (kIsWeb) {
         await triggerDownload(pdfBytes, cleanName);
-        Get.snackbar(
-          'Berhasil',
+        showTopToast(
           'PDF diunduh melalui browser',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          background: Colors.green,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
         );
         return;
       }
@@ -1672,18 +1711,18 @@ class PdfCutiController extends GetxController {
         await OpenFilex.open(file.path);
       } catch (_) {}
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'PDF tersimpan di ${file.path}',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menyimpan PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -1702,11 +1741,11 @@ class PdfCutiController extends GetxController {
 
       await Share.shareXFiles([XFile(file.path)], text: 'Dokumen Cuti');
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal membagikan PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -1717,11 +1756,11 @@ class PdfCutiController extends GetxController {
         onLayout: (PdfPageFormat format) async => pdfBytes,
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal mencetak PDF: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }
@@ -1736,11 +1775,11 @@ class PdfCutiController extends GetxController {
 
       if (kIsWeb) {
         await triggerDownload(pngBytes, pngName);
-        Get.snackbar(
-          'Berhasil',
+        showTopToast(
           'Gambar diunduh melalui browser',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          background: Colors.green,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
         );
         return;
       }
@@ -1763,18 +1802,18 @@ class PdfCutiController extends GetxController {
         await OpenFilex.open(file.path);
       } catch (_) {}
 
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'Gambar tersimpan di ${file.path}',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Gagal menyimpan gambar: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }

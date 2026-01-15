@@ -10,7 +10,6 @@ import 'package:mti_ptk/page/cuti_page.dart';
 import 'package:mti_ptk/page/insentif_page.dart';
 import 'package:mti_ptk/page/settings_page.dart';
 import 'package:mti_ptk/page/surat_keluar_page.dart';
-import 'package:mti_ptk/page/group_management_page.dart';
 import 'package:mti_ptk/page/data_management_page.dart';
 import 'package:mti_ptk/page/tambah_pegawai_page.dart';
 import 'package:mti_ptk/page/edit_pegawai_page.dart';
@@ -18,7 +17,6 @@ import 'package:mti_ptk/page/tambah_group_page.dart';
 import 'package:mti_ptk/page/edit_group_page.dart';
 import 'package:mti_ptk/page/tambah_jabatan_page.dart';
 import 'package:mti_ptk/page/edit_jabatan_page.dart';
-import 'package:mti_ptk/page/tambah_supervisor_page.dart';
 import 'package:mti_ptk/page/edit_supervisor_page.dart';
 import 'package:mti_ptk/page/semua_data_eksepsi_page.dart';
 import 'package:mti_ptk/page/semua_data_cuti_page.dart';
@@ -34,14 +32,14 @@ void main() async {
   await initializeDateFormatting('id_ID');
 
   // Create permanent LoginController for the entire app
-  final LoginController controller =
-      Get.isRegistered<LoginController>() ? Get.find<LoginController>() : Get.put(LoginController(), permanent: true);
+  final LoginController controller = Get.isRegistered<LoginController>()
+      ? Get.find<LoginController>()
+      : Get.put(LoginController(), permanent: true);
 
   // Load saved login data without redirecting
   await controller.checkLoginStatus(shouldRedirect: false);
 
-  final String initialRoute =
-      controller.isLoggedIn.value ? '/home' : '/login';
+  final String initialRoute = controller.isLoggedIn.value ? '/home' : '/login';
 
   runApp(MyApp(initialRoute: initialRoute));
 }
@@ -123,8 +121,6 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/insentif', page: () => const InsentifPage()),
         GetPage(name: '/surat-keluar', page: () => const SuratKeluarPage()),
         GetPage(
-            name: '/group-management', page: () => const GroupManagementPage()),
-        GetPage(
             name: '/data-management', page: () => const DataManagementPage()),
         GetPage(name: '/tambah-pegawai', page: () => const TambahPegawaiPage()),
         GetPage(name: '/edit-pegawai', page: () => const EditPegawaiPage()),
@@ -132,9 +128,6 @@ class MyApp extends StatelessWidget {
         GetPage(name: '/edit-group', page: () => const EditGroupPage()),
         GetPage(name: '/tambah-jabatan', page: () => const TambahJabatanPage()),
         GetPage(name: '/edit-jabatan', page: () => const EditJabatanPage()),
-        GetPage(
-            name: '/tambah-supervisor',
-            page: () => const TambahSupervisorPage()),
         GetPage(
             name: '/edit-supervisor', page: () => const EditSupervisorPage()),
         GetPage(name: '/eksepsi', page: () => const EksepsiPage()),

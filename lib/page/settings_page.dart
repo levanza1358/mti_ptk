@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../controller/login_controller.dart';
+import '../utils/top_toast.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -133,7 +134,9 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: 'Perbarui password akun Anda',
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
-              Get.snackbar('Info', 'Fitur ubah password akan segera hadir');
+              showTopToast(
+                'Fitur ubah password akan segera hadir',
+              );
             },
           ),
 
@@ -157,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: 'Periksa versi terbaru aplikasi',
             trailing: const Icon(Icons.system_update),
             onTap: () {
-              Get.snackbar('Info', 'Fitur cek pembaruan akan segera hadir');
+              showTopToast('Fitur cek pembaruan akan segera hadir');
             },
           ),
 
@@ -170,7 +173,12 @@ class _SettingsPageState extends State<SettingsPage> {
               if (await canLaunchUrl(Uri.parse(email))) {
                 await launchUrl(Uri.parse(email));
               } else {
-                Get.snackbar('Error', 'Tidak dapat membuka email client');
+                showTopToast(
+                  'Tidak dapat membuka email client',
+                  background: Colors.red,
+                  foreground: Colors.white,
+                  duration: const Duration(seconds: 3),
+                );
               }
             },
           ),

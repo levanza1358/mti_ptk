@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class LoginController extends GetxController {
   final TextEditingController nrpController = TextEditingController();
@@ -11,6 +12,7 @@ class LoginController extends GetxController {
   var isLoading = false.obs;
   var isLoggedIn = false.obs;
   var currentUser = Rxn<Map<String, dynamic>>();
+  var currentJabatan = Rxn<Map<String, dynamic>>();
   var isPasswordHidden = true.obs;
 
   final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
@@ -31,6 +33,10 @@ class LoginController extends GetxController {
         final user = Map<String, dynamic>.from(json.decode(userJson));
         currentUser.value = user;
         isLoggedIn.value = true;
+
+        // Fetch permissions
+        await fetchJabatanPermissions();
+
         // Only redirect to home if we're on the login page and shouldRedirect is true
         final currentRoute = Get.currentRoute;
         if (shouldRedirect &&
@@ -41,6 +47,28 @@ class LoginController extends GetxController {
         // If parsing fails, clear and stay on current page
         await prefs.remove('current_user');
       }
+    }
+  }
+
+  Future<void> fetchJabatanPermissions() async {
+    final user = currentUser.value;
+    if (user == null || user['jabatan'] == null) {
+      currentJabatan.value = null;
+      return;
+    }
+
+    try {
+      final jabatanName = user['jabatan'].toString();
+      final response = await SupabaseService.instance.client
+          .from('jabatan')
+          .select()
+          .eq('nama', jabatanName)
+          .maybeSingle();
+
+      currentJabatan.value = response;
+    } catch (e) {
+      debugPrint('Error fetching jabatan permissions: $e');
+      currentJabatan.value = null;
     }
   }
 
@@ -61,35 +89,34 @@ class LoginController extends GetxController {
         currentUser.value = user;
         isLoggedIn.value = true;
 
+        // Fetch permissions
+        await fetchJabatanPermissions();
+
         // Save to shared preferences for persistence
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('current_user', json.encode(user));
 
         Get.offAllNamed('/home');
-
-        Get.snackbar(
-          'Berhasil',
+        showTopToast(
           'Login berhasil! Selamat datang ${user['name']}',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
+          background: Colors.green,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
         );
       } else {
-        Get.snackbar(
-          'Error',
+        showTopToast(
           'NRP atau password salah',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
+          background: Colors.red,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
         );
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Terjadi kesalahan: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
@@ -99,6 +126,7 @@ class LoginController extends GetxController {
   Future<void> logout() async {
     try {
       currentUser.value = null;
+      currentJabatan.value = null;
       isLoggedIn.value = false;
 
       nrpController.clear();
@@ -109,21 +137,18 @@ class LoginController extends GetxController {
       await prefs.remove('current_user');
 
       Get.offAllNamed('/login');
-
-      Get.snackbar(
-        'Berhasil',
+      showTopToast(
         'Logout berhasil',
-        backgroundColor: Colors.blue,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.blue,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
+      showTopToast(
         'Logout gagal: ${e.toString()}',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
       );
     }
   }

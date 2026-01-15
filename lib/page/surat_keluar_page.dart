@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../services/supabase_service.dart';
+import '../utils/top_toast.dart';
 
 class SuratKeluarPage extends StatefulWidget {
   const SuratKeluarPage({super.key});
@@ -118,7 +119,7 @@ class _SuratKeluarPageState extends State<SuratKeluarPage> {
                         TextButton.icon(
                           onPressed: () {
                             // View/download PDF functionality
-                            Get.snackbar('Info', 'Fitur lihat PDF akan segera hadir');
+                            showTopToast('Fitur lihat PDF akan segera hadir');
                           },
                           icon: const Icon(Icons.picture_as_pdf),
                           label: const Text('Lihat PDF'),
@@ -239,12 +240,22 @@ class _SuratKeluarPageState extends State<SuratKeluarPage> {
     if (_companyController.text.isEmpty ||
         _letterTitleController.text.isEmpty ||
         _descriptionController.text.isEmpty) {
-      Get.snackbar('Error', 'Harap isi semua field yang wajib');
+      showTopToast(
+        'Harap isi semua field yang wajib',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
       return;
     }
 
     // Here you would submit to Supabase
-    Get.snackbar('Success', 'Surat keluar berhasil ditambahkan');
+    showTopToast(
+      'Surat keluar berhasil ditambahkan',
+      background: Colors.green,
+      foreground: Colors.white,
+      duration: const Duration(seconds: 3),
+    );
     setState(() {
       _showForm = false;
       _clearForm();
@@ -262,7 +273,8 @@ class _SuratKeluarPageState extends State<SuratKeluarPage> {
     try {
       final response = await SupabaseService.instance.client
           .from('surat_keluar')
-          .select('nama_perusahaan, judul_surat, nomor_surat, deskripsi_surat, created_at')
+          .select(
+              'nama_perusahaan, judul_surat, nomor_surat, deskripsi_surat, created_at')
           .order('created_at', ascending: false)
           .limit(20);
       return List<Map<String, dynamic>>.from(response);
