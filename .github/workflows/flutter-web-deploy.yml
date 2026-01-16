@@ -34,7 +34,7 @@ jobs:
         run: flutter analyze
 
       - name: Build Flutter web
-        run: flutter build web --release --base-href=/mti_ptk/
+        run: flutter build web --release --base-href=/mti_pontianak/
 
       - name: Prepare docs folder for GitHub Pages
         run: |
