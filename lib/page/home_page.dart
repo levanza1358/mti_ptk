@@ -28,7 +28,6 @@ class HomePage extends StatelessWidget {
             Obx(() {
               final user = loginController.currentUser.value;
               final userDetail = homeController.userDetail.value ?? {};
-              final isDetailLoading = homeController.isUserDetailLoading.value;
 
               final nama =
                   (userDetail['name'] ?? user?['name'] ?? 'User').toString();
@@ -37,14 +36,6 @@ class HomePage extends StatelessWidget {
                   (userDetail['jabatan'] ?? user?['jabatan'] ?? '-').toString();
               final group =
                   (userDetail['group'] ?? user?['group'] ?? '-').toString();
-              final rawKontak =
-                  (userDetail['kontak'] ?? user?['kontak'] ?? '').toString();
-              final kontak = rawKontak.isEmpty ? '-' : _formatPhone(rawKontak);
-              final ukuranBaju = (userDetail['ukuran_baju'] ?? '-').toString();
-              final ukuranCelana =
-                  (userDetail['ukuran_celana'] ?? '-').toString();
-              final ukuranSepatu =
-                  (userDetail['ukuran_sepatu'] ?? '-').toString();
 
               return Container(
                 padding: const EdgeInsets.all(20),
@@ -136,73 +127,6 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Data Pribadi',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.orange.shade200,
-                                ),
-                                onPressed: () =>
-                                    Get.toNamed('/data-pribadi')?.then((_) {
-                                  homeController.fetchUserDetail();
-                                }),
-                                icon: const Icon(
-                                  Icons.edit,
-                                  size: 18,
-                                ),
-                                label: const Text(
-                                  'Edit',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          if (isDetailLoading)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: LinearProgressIndicator(
-                                minHeight: 2,
-                                color: Colors.white,
-                                backgroundColor: Colors.transparent,
-                              ),
-                            ),
-                          if (!isDetailLoading) ...[
-                            const SizedBox(height: 4),
-                            _buildPersonalRow(
-                                'Nomor HP / WA', kontak, Icons.phone),
-                            const SizedBox(height: 4),
-                            _buildPersonalRow(
-                                'Ukuran Baju', ukuranBaju, Icons.checkroom),
-                            const SizedBox(height: 4),
-                            _buildPersonalRow('Ukuran Celana', ukuranCelana,
-                                Icons.straighten),
-                            const SizedBox(height: 4),
-                            _buildPersonalRow('Ukuran Sepatu', ukuranSepatu,
-                                Icons.directions_walk),
-                          ],
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -397,32 +321,147 @@ class HomePage extends StatelessWidget {
                 children: menuItems,
               );
             }),
+
+            const SizedBox(height: 24),
+
+            Obx(() {
+              final user = loginController.currentUser.value;
+              final userDetail = homeController.userDetail.value ?? {};
+              final isDetailLoading = homeController.isUserDetailLoading.value;
+
+              final rawKontak =
+                  (userDetail['kontak'] ?? user?['kontak'] ?? '').toString();
+              final kontak = rawKontak.isEmpty ? '-' : _formatPhone(rawKontak);
+              final ukuranBaju = (userDetail['ukuran_baju'] ?? '-').toString();
+              final ukuranCelana =
+                  (userDetail['ukuran_celana'] ?? '-').toString();
+              final ukuranSepatu =
+                  (userDetail['ukuran_sepatu'] ?? '-').toString();
+
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.black.withValues(alpha: 0.2)
+                          : Colors.grey.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Data Pribadi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                Theme.of(context).textTheme.titleMedium?.color,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: () =>
+                              Get.toNamed('/data-pribadi')?.then((_) {
+                            homeController.fetchUserDetail();
+                          }),
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text('Edit'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (isDetailLoading)
+                      const LinearProgressIndicator(minHeight: 2)
+                    else ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Nomor HP / WA: $kontak',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.checkroom, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ukuran Baju: $ukuranBaju',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.straighten, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ukuran Celana: $ukuranCelana',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.directions_walk, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Ukuran Sepatu: $ukuranSepatu',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPersonalRow(String label, String value, IconData icon) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 16,
-          color: Colors.white.withValues(alpha: 0.9),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            '$label: $value',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.9),
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 
