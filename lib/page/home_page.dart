@@ -108,8 +108,8 @@ class HomePage extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryCard(
                       context,
-                      'Total Premi',
-                      '(${DateTime.now().year})',
+                      'Total Premi (${DateTime.now().year})',
+                      '',
                       currencyFormat.format(homeController.totalPremi.value),
                       Colors.green.shade600,
                       Icons.attach_money,
@@ -119,8 +119,8 @@ class HomePage extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryCard(
                       context,
-                      'Total Lembur',
-                      '(${DateTime.now().year})',
+                      'Total Lembur (${DateTime.now().year})',
+                      '',
                       currencyFormat.format(homeController.totalLembur.value),
                       Colors.orange.shade600,
                       Icons.access_time,
@@ -150,18 +150,6 @@ class HomePage extends StatelessWidget {
               bool has(String key) => permissions[key] == true;
 
               final List<Widget> menuItems = [];
-
-              // Data Pegawai
-              if (has('permissionManagementData')) {
-                menuItems.add(_buildMenuTile(
-                  context,
-                  'Data Pegawai',
-                  'Kelola data karyawan',
-                  Icons.people,
-                  Colors.blue,
-                  () => Get.toNamed('/data-pegawai'),
-                ));
-              }
 
               // Cuti
               if (has('permissionCuti')) {
@@ -294,6 +282,7 @@ class HomePage extends StatelessWidget {
   Widget _buildSummaryCard(BuildContext context, String title, String subtitle,
       String value, Color color, IconData icon) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasSubtitle = subtitle.trim().isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -330,14 +319,15 @@ class HomePage extends StatelessWidget {
               color: Theme.of(context).textTheme.bodyMedium?.color,
             ),
           ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 10,
-              color: Theme.of(context).textTheme.bodySmall?.color,
+          if (hasSubtitle)
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 10,
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
+          if (hasSubtitle) const SizedBox(height: 4),
           Text(
             value,
             style: TextStyle(

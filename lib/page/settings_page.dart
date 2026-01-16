@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../controller/login_controller.dart';
-import '../utils/top_toast.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,26 +10,6 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notifications') ?? true;
-    });
-  }
-
-  Future<void> _saveSetting(String key, bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(key, value);
-  }
-
   @override
   Widget build(BuildContext context) {
     final LoginController loginController = Get.find<LoginController>();
@@ -127,33 +104,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
           const SizedBox(height: 16),
 
-          // Notifications Section
-          const _SectionHeader(title: 'Notifikasi'),
-          _SettingsTile(
-            title: 'Notifikasi',
-            subtitle: 'Aktifkan notifikasi aplikasi',
-            trailing: Switch(
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() => _notificationsEnabled = value);
-                _saveSetting('notifications', value);
-              },
-            ),
-          ),
-
           // Account Section
           const _SectionHeader(title: 'Akun'),
-          _SettingsTile(
-            title: 'Ubah Password',
-            subtitle: 'Perbarui password akun Anda',
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              showTopToast(
-                'Fitur ubah password akan segera hadir',
-              );
-            },
-          ),
-
           _SettingsTile(
             title: 'Logout',
             subtitle: 'Keluar dari aplikasi',
@@ -167,44 +119,6 @@ class _SettingsPageState extends State<SettingsPage> {
             title: 'Versi Aplikasi',
             subtitle: '1.0.0+1',
             trailing: const Icon(Icons.info_outline),
-          ),
-
-          _SettingsTile(
-            title: 'Cek Pembaruan',
-            subtitle: 'Periksa versi terbaru aplikasi',
-            trailing: const Icon(Icons.system_update),
-            onTap: () {
-              showTopToast('Fitur cek pembaruan akan segera hadir');
-            },
-          ),
-
-          _SettingsTile(
-            title: 'Hubungi Developer',
-            subtitle: 'Kirim masukan atau laporkan masalah',
-            trailing: const Icon(Icons.contact_support),
-            onTap: () async {
-              const email =
-                  'mailto:support@mti-ptk.com?subject=Masukan Aplikasi MTI PTK';
-              if (await canLaunchUrl(Uri.parse(email))) {
-                await launchUrl(Uri.parse(email));
-              } else {
-                showTopToast(
-                  'Tidak dapat membuka email client',
-                  background: Colors.red,
-                  foreground: Colors.white,
-                  duration: const Duration(seconds: 3),
-                );
-              }
-            },
-          ),
-
-          _SettingsTile(
-            title: 'Lisensi',
-            subtitle: 'Informasi lisensi aplikasi',
-            trailing: const Icon(Icons.description),
-            onTap: () {
-              _showLicenseDialog(context);
-            },
           ),
 
           const SizedBox(height: 32),
@@ -233,30 +147,6 @@ class _SettingsPageState extends State<SettingsPage> {
               'Logout',
               style: TextStyle(color: Colors.red),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLicenseDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Lisensi'),
-        content: const SingleChildScrollView(
-          child: Text(
-            'Aplikasi MTI PTK\n\n'
-            'Versi: 1.0.0+1\n\n'
-            'Dikembangkan untuk keperluan internal MTI Pontianak.\n\n'
-            '© 2024 MTI PTK. All rights reserved.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Tutup'),
           ),
         ],
       ),

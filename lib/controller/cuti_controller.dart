@@ -198,11 +198,10 @@ class CutiController extends GetxController
     }
   }
 
-  // Submit cuti application
-  Future<void> submitCutiApplication() async {
+  Future<bool> submitCutiApplication() async {
     if (cutiFormKey.currentState != null &&
         !cutiFormKey.currentState!.validate()) {
-      return;
+      return false;
     }
 
     if (selectedDates.isEmpty) {
@@ -212,7 +211,7 @@ class CutiController extends GetxController
         foreground: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      return;
+      return false;
     }
 
     if (!hasSignature.value || signatureUrl.isEmpty) {
@@ -222,7 +221,7 @@ class CutiController extends GetxController
         foreground: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      return;
+      return false;
     }
 
     // For now, no day limit validation for important leave
@@ -235,7 +234,18 @@ class CutiController extends GetxController
         foreground: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      return;
+      return false;
+    }
+
+    if (selectedLeaveType.value == 'Cuti Tahunan' &&
+        alasanController.text.trim().isEmpty) {
+      showTopToast(
+        'Alasan cuti tidak boleh kosong',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return false;
     }
 
     final lamaCuti = selectedDates.length;
@@ -249,7 +259,7 @@ class CutiController extends GetxController
         foreground: Colors.white,
         duration: const Duration(seconds: 3),
       );
-      return;
+      return false;
     }
 
     isLoading.value = true;
@@ -302,7 +312,7 @@ class CutiController extends GetxController
         duration: const Duration(seconds: 3),
       );
 
-      // Clear form
+      clearSignature();
       clearForm();
 
       // Refresh user data and history
@@ -311,6 +321,7 @@ class CutiController extends GetxController
 
       // Switch to history tab to show the new submission
       tabController.animateTo(1);
+      return true;
     } catch (e) {
       showTopToast(
         'Gagal mengajukan cuti: $e',
@@ -318,6 +329,7 @@ class CutiController extends GetxController
         foreground: Colors.white,
         duration: const Duration(seconds: 3),
       );
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -882,17 +894,23 @@ class CutiController extends GetxController
     selectedYear.value = DateTime.now().year;
   }
 
-  // Update loadCutiHistory to also filter after loading
   Future<void> loadCutiHistory() async {
     isLoadingHistory.value = true;
     try {
       final user = currentUser.value;
 
       if (user != null) {
+        final int year = selectedYear.value;
+        final DateTime start = DateTime(year, 1, 1);
+        final DateTime end = DateTime(year, 12, 31, 23, 59, 59);
+
         final result = await SupabaseService.instance.client
             .from('cuti')
-            .select()
+            .select(
+                'id, users_id, nama, jenis_cuti, lama_cuti, list_tanggal_cuti, tanggal_pengajuan, alasan_cuti, sisa_cuti, url_ttd, kunci_cuti')
             .eq('users_id', user['id']) // Use foreign key instead of nama
+            .gte('tanggal_pengajuan', start.toIso8601String())
+            .lte('tanggal_pengajuan', end.toIso8601String())
             .order('tanggal_pengajuan', ascending: false);
 
         cutiHistory.value = List<Map<String, dynamic>>.from(result);

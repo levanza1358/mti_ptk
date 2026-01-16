@@ -6,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../controller/cuti_controller.dart';
 import 'pdf_preview_page.dart';
 import '../utils/top_toast.dart';
+import '../services/supabase_service.dart';
 
 class CutiPage extends StatefulWidget {
   const CutiPage({super.key});
@@ -760,6 +761,10 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                 final formattedDate = DateFormat('dd MMM yyyy').format(date);
                 final lamaCuti = leave['lama_cuti'] ?? 0;
                 final jenisCuti = leave['jenis_cuti'] ?? '-';
+                final isLocked = (leave['kunci_cuti'] ?? false) == true;
+                final lockColor = isLocked ? Colors.red : Colors.green;
+                final lockIcon = isLocked ? Icons.lock : Icons.lock_open;
+                final lockLabel = isLocked ? 'Terkunci' : 'Terbuka';
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
@@ -790,21 +795,56 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    jenisCuti,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.blue.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        jenisCuti,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.blue,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: lockColor.withValues(alpha: 0.1),
+                                        borderRadius:
+                                            BorderRadius.circular(999),
+                                        border: Border.all(color: lockColor),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            lockIcon,
+                                            size: 14,
+                                            color: lockColor,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            lockLabel,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: lockColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 Text(
                                   formattedDate,
@@ -861,22 +901,24 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
                                     foregroundColor: Colors.red,
                                   ),
                                   onPressed: () =>
-                                      _previewExistingCutiPdf(leave),
+                                      _handleViewPdfAndLockIfNeeded(leave),
                                 ),
-                                const SizedBox(width: 8),
-                                OutlinedButton.icon(
-                                  icon: const Icon(Icons.delete_outline,
-                                      size: 18),
-                                  label: const Text('Hapus'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
+                                if (!isLocked) ...[
+                                  const SizedBox(width: 8),
+                                  OutlinedButton.icon(
+                                    icon: const Icon(Icons.delete_outline,
+                                        size: 18),
+                                    label: const Text('Hapus'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                    ),
+                                    onPressed: () async {
+                                      await cutiController
+                                          .showDeleteConfirmation(leave);
+                                    },
                                   ),
-                                  onPressed: () async {
-                                    await cutiController
-                                        .showDeleteConfirmation(leave);
-                                  },
-                                ),
+                                ],
                               ],
                             ),
                           ],
@@ -898,7 +940,73 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
     if (cutiController.selectedLeaveType.value == 'Cuti Tahunan') {
       cutiController.alasanController.text = _reasonController.text;
     }
-    await cutiController.submitCutiApplication();
+    final success = await cutiController.submitCutiApplication();
+    if (success) {
+      _reasonController.clear();
+      _tabController.animateTo(1);
+    }
+  }
+
+  Future<void> _handleViewPdfAndLockIfNeeded(
+      Map<String, dynamic> leaveData) async {
+    final isLocked = (leaveData['kunci_cuti'] ?? false) == true;
+
+    if (!isLocked) {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Generate PDF Cuti'),
+            content: const Text(
+              'Apakah Anda ingin lanjut generate PDF cuti?\n\n'
+              'Setelah PDF dibuat, pengajuan cuti ini akan dikunci dan tidak dapat dihapus.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Lanjut'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldProceed != true) {
+        return;
+      }
+
+      try {
+        final cutiId = leaveData['id'];
+        if (cutiId != null) {
+          await SupabaseService.instance.client
+              .from('cuti')
+              .update({'kunci_cuti': true}).eq('id', cutiId);
+
+          await cutiController.loadCutiHistory();
+
+          showTopToast(
+            'Cuti berhasil dikunci. Data tidak dapat dihapus.',
+            background: Colors.orange.withValues(alpha: 0.9),
+            foreground: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        }
+      } catch (e) {
+        showTopToast(
+          'Gagal mengunci cuti: $e',
+          background: Colors.red.withValues(alpha: 0.9),
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+        return;
+      }
+    }
+
+    _previewExistingCutiPdf(leaveData);
   }
 
   void _previewExistingCutiPdf(Map<String, dynamic> leaveData) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controller/login_controller.dart';
 
@@ -8,62 +9,56 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final LoginController controller = Get.find<LoginController>();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo Section
-              Container(
-                width: 120,
-                height: 120,
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
+              SizedBox(
+                height: 80,
                 child: Image.asset(
                   'assets/logo/logo_mti.png',
                   fit: BoxFit.contain,
                 ),
               ),
               const SizedBox(height: 32),
-
-              // Welcome Text
-              const Text(
-                'MTI PTK',
-                style: TextStyle(
-                  fontSize: 28,
+              Text(
+                'PT Multi Terminal Indonesia',
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.0,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'LR 2 Area Pontianak',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  color:
+                      theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Silakan login untuk melanjutkan',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color:
+                      theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 40),
-
-              // Login Form Card
               Card(
                 elevation: 8,
-                shadowColor: Colors.black.withValues(alpha: 0.1),
+                color: theme.cardColor,
+                shadowColor: theme.shadowColor.withValues(alpha: 0.4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -76,19 +71,27 @@ class LoginPage extends StatelessWidget {
                       children: [
                         TextFormField(
                           controller: controller.nrpController,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: InputDecoration(
                             labelText: 'NRP',
-                            hintText: 'Masukkan NRP Anda',
                             prefixIcon: const Icon(Icons.person_outline),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
+                              borderSide: BorderSide(
+                                color:
+                                    theme.dividerColor.withValues(alpha: 0.6),
+                              ),
                             ),
                             filled: true,
-                            fillColor: Colors.grey[50],
+                            fillColor: isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.grey[50],
                           ),
                           validator: controller.validateNrp,
                         ),
@@ -98,18 +101,21 @@ class LoginPage extends StatelessWidget {
                               obscureText: controller.isPasswordHidden.value,
                               decoration: InputDecoration(
                                 labelText: 'Password',
-                                hintText: 'Masukkan Password Anda',
                                 prefixIcon: const Icon(Icons.lock_outline),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide:
-                                      BorderSide(color: Colors.grey[300]!),
+                                  borderSide: BorderSide(
+                                    color: theme.dividerColor
+                                        .withValues(alpha: 0.6),
+                                  ),
                                 ),
                                 filled: true,
-                                fillColor: Colors.grey[50],
+                                fillColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : Colors.grey[50],
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     controller.isPasswordHidden.value
@@ -130,8 +136,8 @@ class LoginPage extends StatelessWidget {
                                     ? null
                                     : controller.login,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
+                                  backgroundColor: theme.colorScheme.primary,
+                                  foregroundColor: theme.colorScheme.onPrimary,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -143,15 +149,17 @@ class LoginPage extends StatelessWidget {
                                         width: 24,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: Colors.transparent,
                                         ),
                                       )
-                                    : const Text(
+                                    : Text(
                                         'LOGIN',
-                                        style: TextStyle(
+                                        style: theme.textTheme.labelLarge
+                                            ?.copyWith(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.0,
+                                          color: theme.colorScheme.onPrimary,
                                         ),
                                       ),
                               ),
@@ -164,9 +172,9 @@ class LoginPage extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 'Versi 1.0.0',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color:
+                      theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
                 ),
               ),
             ],

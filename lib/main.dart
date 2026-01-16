@@ -5,7 +5,6 @@ import 'package:mti_ptk/config/supabase_config.dart';
 import 'package:mti_ptk/controller/login_controller.dart';
 import 'package:mti_ptk/page/login_page.dart';
 import 'package:mti_ptk/page/home_page.dart';
-import 'package:mti_ptk/page/data_pegawai_page.dart';
 import 'package:mti_ptk/page/cuti_page.dart';
 import 'package:mti_ptk/page/insentif_page.dart';
 import 'package:mti_ptk/page/settings_page.dart';
@@ -52,7 +51,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'MTI PTK',
+      title: 'PT Multi Terminal Indonesia LR 2 Area Pontianak',
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -116,7 +115,6 @@ class MyApp extends StatelessWidget {
           }),
         ),
         GetPage(name: '/home', page: () => const HomePage()),
-        GetPage(name: '/data-pegawai', page: () => const DataPegawaiPage()),
         GetPage(name: '/cuti', page: () => const CutiPage()),
         GetPage(name: '/insentif', page: () => const InsentifPage()),
         GetPage(name: '/surat-keluar', page: () => const SuratKeluarPage()),

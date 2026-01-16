@@ -1,11 +1,11 @@
 {
-    "name": "mti_ptk",
-    "short_name": "mti_ptk",
+    "name": "PT Multi Terminal Indonesia LR 2 Area Pontianak",
+    "short_name": "MTI LR2 Pontianak",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Aplikasi PT Multi Terminal Indonesia LR 2 Area Pontianak",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
