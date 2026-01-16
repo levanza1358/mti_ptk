@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 
 import '../controller/login_controller.dart';
 import '../services/supabase_service.dart';
-import '../utils/top_toast.dart';
 
 class InsentifPage extends StatefulWidget {
   const InsentifPage({super.key});
@@ -100,10 +99,6 @@ class InsentifLemburTab extends StatefulWidget {
 }
 
 class _InsentifLemburTabState extends State<InsentifLemburTab> {
-  final TextEditingController _nrpController = TextEditingController();
-  final TextEditingController _nominalController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  bool _showForm = false;
   late int _selectedYear;
 
   @override
@@ -113,24 +108,9 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
   }
 
   @override
-  void dispose() {
-    _nrpController.dispose();
-    _nominalController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _showForm ? _buildAddForm() : _buildList(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _showForm = !_showForm;
-          });
-        },
-        child: Icon(_showForm ? Icons.list : Icons.add),
-      ),
+      body: _buildList(),
     );
   }
 
@@ -214,52 +194,39 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
                                         ?.color,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.orange
-                                            .withValues(alpha: 0.1),
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                        border:
-                                            Border.all(color: Colors.orange),
-                                      ),
-                                      child: Text(
-                                        'Lembur • $bulanStr',
-                                        style: const TextStyle(
-                                          color: Colors.orange,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Rp $nominalStr',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orange),
-                            ),
-                            child: const Icon(Icons.chevron_right,
-                                color: Colors.orange, size: 20),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.orange),
+                                ),
+                                child: Text(
+                                  'Lembur • $bulanStr',
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rp $nominalStr',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -331,149 +298,6 @@ class _InsentifLemburTabState extends State<InsentifLemburTab> {
     final raw = value.toString().trim();
     final cleaned = raw.replaceAll('.', '').replaceAll(',', '');
     return int.tryParse(cleaned) ?? 0;
-  }
-
-  Widget _buildAddForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tambah Insentif Lembur',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _nrpController,
-                    decoration: const InputDecoration(
-                      labelText: 'NRP',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'NRP tidak boleh kosong';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nominalController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nominal',
-                      border: OutlineInputBorder(),
-                      prefixText: 'Rp ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Nominal tidak boleh kosong';
-                      }
-                      if (int.tryParse(value.replaceAll('.', '')) == null) {
-                        return 'Nominal harus berupa angka';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Bulan'),
-                    subtitle: Text(
-                        DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: _selectDate,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _showForm = false;
-                              _clearForm();
-                            });
-                          },
-                          child: const Text('Batal'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _submitLembur,
-                          child: const Text('Simpan'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  void _submitLembur() {
-    if (_nrpController.text.isEmpty || _nominalController.text.isEmpty) {
-      showTopToast(
-        'Harap isi semua field',
-        background: Colors.red,
-        foreground: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    final nominal = int.tryParse(_nominalController.text.replaceAll('.', ''));
-    if (nominal == null) {
-      showTopToast(
-        'Nominal harus berupa angka',
-        background: Colors.red,
-        foreground: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    // Here you would submit to Supabase
-    showTopToast(
-      'Insentif lembur berhasil ditambahkan',
-      background: Colors.green,
-      foreground: Colors.white,
-      duration: const Duration(seconds: 3),
-    );
-    setState(() {
-      _showForm = false;
-      _clearForm();
-    });
-  }
-
-  void _clearForm() {
-    _nrpController.clear();
-    _nominalController.clear();
-    _selectedDate = DateTime.now();
   }
 
   String _formatDate(String? dateString) {
@@ -565,10 +389,6 @@ class InsentifPremiTab extends StatefulWidget {
 }
 
 class _InsentifPremiTabState extends State<InsentifPremiTab> {
-  final TextEditingController _nrpController = TextEditingController();
-  final TextEditingController _nominalController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  bool _showForm = false;
   late int _selectedYear;
 
   @override
@@ -578,24 +398,9 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
   }
 
   @override
-  void dispose() {
-    _nrpController.dispose();
-    _nominalController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _showForm ? _buildAddForm() : _buildList(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _showForm = !_showForm;
-          });
-        },
-        child: Icon(_showForm ? Icons.list : Icons.add),
-      ),
+      body: _buildList(),
     );
   }
 
@@ -670,7 +475,7 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  'NRP: ${(item['nrp'] ?? '-').toString()} • Group: ${(item['group'] ?? '-').toString()}',
+                                  'NRP: ${(item['nrp'] ?? '-').toString()}',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Theme.of(context)
@@ -679,51 +484,39 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
                                         ?.color,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Colors.teal.withValues(alpha: 0.1),
-                                        borderRadius:
-                                            BorderRadius.circular(999),
-                                        border: Border.all(color: Colors.teal),
-                                      ),
-                                      child: Text(
-                                        'Premi • $bulanStr',
-                                        style: const TextStyle(
-                                          color: Colors.teal,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Rp $nominalStr',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: Colors.teal.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.teal),
-                            ),
-                            child: const Icon(Icons.chevron_right,
-                                color: Colors.teal, size: 20),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.teal.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: Colors.teal),
+                                ),
+                                child: Text(
+                                  'Premi • $bulanStr',
+                                  style: const TextStyle(
+                                    color: Colors.teal,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rp $nominalStr',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -795,149 +588,6 @@ class _InsentifPremiTabState extends State<InsentifPremiTab> {
     final raw = value.toString().trim();
     final cleaned = raw.replaceAll('.', '').replaceAll(',', '');
     return int.tryParse(cleaned) ?? 0;
-  }
-
-  Widget _buildAddForm() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Tambah Insentif Premi',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _nrpController,
-                    decoration: const InputDecoration(
-                      labelText: 'NRP',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'NRP tidak boleh kosong';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _nominalController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nominal',
-                      border: OutlineInputBorder(),
-                      prefixText: 'Rp ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Nominal tidak boleh kosong';
-                      }
-                      if (int.tryParse(value.replaceAll('.', '')) == null) {
-                        return 'Nominal harus berupa angka';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Bulan'),
-                    subtitle: Text(
-                        DateFormat('MMMM yyyy', 'id_ID').format(_selectedDate)),
-                    trailing: const Icon(Icons.calendar_today),
-                    onTap: _selectDate,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              _showForm = false;
-                              _clearForm();
-                            });
-                          },
-                          child: const Text('Batal'),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _submitPremi,
-                          child: const Text('Simpan'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
-  void _submitPremi() {
-    if (_nrpController.text.isEmpty || _nominalController.text.isEmpty) {
-      showTopToast(
-        'Harap isi semua field',
-        background: Colors.red,
-        foreground: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    final nominal = int.tryParse(_nominalController.text.replaceAll('.', ''));
-    if (nominal == null) {
-      showTopToast(
-        'Nominal harus berupa angka',
-        background: Colors.red,
-        foreground: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-      return;
-    }
-
-    // Here you would submit to Supabase
-    showTopToast(
-      'Insentif premi berhasil ditambahkan',
-      background: Colors.green,
-      foreground: Colors.white,
-      duration: const Duration(seconds: 3),
-    );
-    setState(() {
-      _showForm = false;
-      _clearForm();
-    });
-  }
-
-  void _clearForm() {
-    _nrpController.clear();
-    _nominalController.clear();
-    _selectedDate = DateTime.now();
   }
 
   String _formatDate(String? dateString) {

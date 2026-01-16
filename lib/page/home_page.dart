@@ -151,7 +151,6 @@ class HomePage extends StatelessWidget {
 
               final List<Widget> menuItems = [];
 
-              // Cuti
               if (has('permissionCuti')) {
                 menuItems.add(_buildMenuTile(
                   context,
@@ -163,19 +162,6 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Eksepsi
-              if (has('permissionEksepsi')) {
-                menuItems.add(_buildMenuTile(
-                  context,
-                  'Eksepsi',
-                  'Pengajuan dan riwayat eksepsi',
-                  Icons.warning_amber_rounded,
-                  Colors.orange,
-                  () => Get.toNamed('/eksepsi'),
-                ));
-              }
-
-              // Kalender Cuti (akses sama seperti pengajuan cuti)
               if (has('permissionCuti')) {
                 menuItems.add(_buildMenuTile(
                   context,
@@ -187,7 +173,6 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Semua Data Cuti
               if (has('permissionAllCuti')) {
                 menuItems.add(_buildMenuTile(
                   context,
@@ -199,31 +184,17 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Insentif
-              if (has('permissionInsentif')) {
+              if (has('permissionEksepsi')) {
                 menuItems.add(_buildMenuTile(
                   context,
-                  'Insentif',
-                  'Informasi insentif dan lembur',
-                  Icons.monetization_on,
+                  'Eksepsi',
+                  'Pengajuan dan riwayat eksepsi',
+                  Icons.warning_amber_rounded,
                   Colors.orange,
-                  () => Get.toNamed('/insentif'),
+                  () => Get.toNamed('/eksepsi'),
                 ));
               }
 
-              // Surat Keluar
-              if (has('permissionSuratKeluar')) {
-                menuItems.add(_buildMenuTile(
-                  context,
-                  'Surat Keluar',
-                  'Arsip surat keluar',
-                  Icons.outbox,
-                  Colors.indigo,
-                  () => Get.toNamed('/surat-keluar'),
-                ));
-              }
-
-              // Semua Data Eksepsi
               if (has('permissionAllEksepsi')) {
                 menuItems.add(_buildMenuTile(
                   context,
@@ -235,7 +206,17 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Semua Data Insentif
+              if (has('permissionInsentif')) {
+                menuItems.add(_buildMenuTile(
+                  context,
+                  'Insentif',
+                  'Informasi insentif dan lembur',
+                  Icons.monetization_on,
+                  Colors.orange,
+                  () => Get.toNamed('/insentif'),
+                ));
+              }
+
               if (has('permissionAllInsentif')) {
                 menuItems.add(_buildMenuTile(
                   context,
@@ -247,7 +228,17 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Data Management
+              if (has('permissionSuratKeluar')) {
+                menuItems.add(_buildMenuTile(
+                  context,
+                  'Surat Keluar',
+                  'Arsip surat keluar',
+                  Icons.outbox,
+                  Colors.indigo,
+                  () => Get.toNamed('/surat-keluar'),
+                ));
+              }
+
               if (has('permissionManagementData')) {
                 menuItems.add(_buildMenuTile(
                   context,
