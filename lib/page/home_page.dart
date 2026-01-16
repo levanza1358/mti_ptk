@@ -24,9 +24,28 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Profile Section
+            // User Profile + Data Pribadi
             Obx(() {
               final user = loginController.currentUser.value;
+              final userDetail = homeController.userDetail.value ?? {};
+              final isDetailLoading = homeController.isUserDetailLoading.value;
+
+              final nama =
+                  (userDetail['name'] ?? user?['name'] ?? 'User').toString();
+              final nrp = (userDetail['nrp'] ?? user?['nrp'] ?? '-').toString();
+              final jabatan =
+                  (userDetail['jabatan'] ?? user?['jabatan'] ?? '-').toString();
+              final group =
+                  (userDetail['group'] ?? user?['group'] ?? '-').toString();
+              final rawKontak =
+                  (userDetail['kontak'] ?? user?['kontak'] ?? '').toString();
+              final kontak = rawKontak.isEmpty ? '-' : _formatPhone(rawKontak);
+              final ukuranBaju = (userDetail['ukuran_baju'] ?? '-').toString();
+              final ukuranCelana =
+                  (userDetail['ukuran_celana'] ?? '-').toString();
+              final ukuranSepatu =
+                  (userDetail['ukuran_sepatu'] ?? '-').toString();
+
               return Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -44,41 +63,144 @@ class HomePage extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      child: Text(
-                        (user?['name'] ?? 'U')[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?['name'] ?? 'User',
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
+                          child: Text(
+                            (nama.isNotEmpty ? nama[0] : 'U').toUpperCase(),
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'NRP: ${user?['nrp'] ?? '-'}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      nama,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.refresh),
+                                    color: Colors.white,
+                                    tooltip: 'Refresh',
+                                    onPressed: () {
+                                      homeController.fetchUserDetail();
+                                      homeController.fetchAnnualSummary();
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'NRP: $nrp',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Jabatan: $jabatan',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                              Text(
+                                'Group: $group',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Data Pribadi',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.orange.shade200,
+                                ),
+                                onPressed: () =>
+                                    Get.toNamed('/data-pribadi')?.then((_) {
+                                  homeController.fetchUserDetail();
+                                }),
+                                icon: const Icon(
+                                  Icons.edit,
+                                  size: 18,
+                                ),
+                                label: const Text(
+                                  'Edit',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if (isDetailLoading)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: LinearProgressIndicator(
+                                minHeight: 2,
+                                color: Colors.white,
+                                backgroundColor: Colors.transparent,
+                              ),
+                            ),
+                          if (!isDetailLoading) ...[
+                            const SizedBox(height: 4),
+                            _buildPersonalRow(
+                                'Nomor HP / WA', kontak, Icons.phone),
+                            const SizedBox(height: 4),
+                            _buildPersonalRow(
+                                'Ukuran Baju', ukuranBaju, Icons.checkroom),
+                            const SizedBox(height: 4),
+                            _buildPersonalRow('Ukuran Celana', ukuranCelana,
+                                Icons.straighten),
+                            const SizedBox(height: 4),
+                            _buildPersonalRow('Ukuran Sepatu', ukuranSepatu,
+                                Icons.directions_walk),
+                          ],
                         ],
                       ),
                     ),
@@ -250,6 +372,17 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
+              menuItems.add(_buildMenuTile(
+                context,
+                'Data Pribadi',
+                'Ubah nomor HP dan ukuran',
+                Icons.person,
+                Colors.blue,
+                () => Get.toNamed('/data-pribadi')?.then((_) {
+                  homeController.fetchUserDetail();
+                }),
+              ));
+
               // Settings - Always visible
               menuItems.add(_buildMenuTile(
                 context,
@@ -267,6 +400,29 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPersonalRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: Colors.white.withValues(alpha: 0.9),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            '$label: $value',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 
@@ -411,5 +567,31 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatPhone(String raw) {
+    var s = raw.trim();
+    if (s.isEmpty) return s;
+
+    s = s.replaceAll(RegExp(r'\s+'), '');
+    s = s.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (s.startsWith('00')) {
+      s = s.substring(2);
+    }
+
+    if (s.startsWith('62')) {
+      return s;
+    }
+
+    if (s.startsWith('0') && s.length > 1) {
+      return '62${s.substring(1)}';
+    }
+
+    if (s.startsWith('8')) {
+      return '62$s';
+    }
+
+    return s;
   }
 }

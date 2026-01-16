@@ -22,6 +22,7 @@ import 'package:mti_ptk/page/semua_data_cuti_page.dart';
 import 'package:mti_ptk/page/semua_data_insentif_page.dart';
 import 'package:mti_ptk/page/eksepsi_page.dart';
 import 'package:mti_ptk/page/kalender_cuti_page.dart';
+import 'package:mti_ptk/page/data_pribadi_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -139,6 +140,7 @@ class MyApp extends StatelessWidget {
             name: '/semua-data-insentif',
             page: () => const SemuaDataInsentifPage()),
         GetPage(name: '/settings', page: () => const SettingsPage()),
+        GetPage(name: '/data-pribadi', page: () => const DataPribadiPage()),
       ],
     );
   }

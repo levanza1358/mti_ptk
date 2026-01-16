@@ -21,7 +21,7 @@ class _EksepsiPageState extends State<EksepsiPage>
 
   late TabController _tabController;
   final CalendarFormat _calendarFormat = CalendarFormat.month;
-  final DateTime _focusedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
   final Set<DateTime> _selectedDates = {};
   int _selectedYear = DateTime.now().year;
 
@@ -613,6 +613,7 @@ class _EksepsiPageState extends State<EksepsiPage>
           orElse: () => null);
       if (existing != null) {
         _selectedDates.remove(existing);
+        _focusedDay = focusedDay;
         return;
       }
       if (_selectedDates.length >= _maxEksepsiDaysForOnePagePdf) {
@@ -622,9 +623,11 @@ class _EksepsiPageState extends State<EksepsiPage>
           foreground: Colors.white,
           duration: const Duration(seconds: 3),
         );
+        _focusedDay = focusedDay;
         return;
       }
       _selectedDates.add(normalized);
+      _focusedDay = focusedDay;
     });
   }
 

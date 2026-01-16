@@ -1,9 +1,15 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:excel/excel.dart' as xlsx;
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
+import '../utils/web_download.dart';
 
 class DataManagementPage extends StatefulWidget {
   const DataManagementPage({super.key});
@@ -14,11 +20,129 @@ class DataManagementPage extends StatefulWidget {
 
 class _DataManagementPageState extends State<DataManagementPage> {
   late final Future<Map<String, int>> _summaryFuture;
+  bool _isExportingPegawai = false;
 
   @override
   void initState() {
     super.initState();
     _summaryFuture = _fetchSummaryCounts();
+  }
+
+  Future<void> _exportPegawaiToExcel() async {
+    if (_isExportingPegawai) return;
+    setState(() {
+      _isExportingPegawai = true;
+    });
+
+    try {
+      final users = await SupabaseService.instance.client.from('users').select(
+          'nrp, name, jabatan, "group", kontak, ukuran_baju, ukuran_celana, ukuran_sepatu');
+
+      final rows = List<Map<String, dynamic>>.from(users);
+
+      final excel = xlsx.Excel.createExcel();
+      final sheetName = excel.getDefaultSheet() ?? 'Sheet1';
+      final sheet = excel[sheetName];
+
+      final header = <xlsx.CellValue?>[
+        xlsx.TextCellValue('No'),
+        xlsx.TextCellValue('NRP'),
+        xlsx.TextCellValue('Nama'),
+        xlsx.TextCellValue('Jabatan'),
+        xlsx.TextCellValue('Group'),
+        xlsx.TextCellValue('Nomor HP'),
+        xlsx.TextCellValue('Ukuran Baju'),
+        xlsx.TextCellValue('Ukuran Celana'),
+        xlsx.TextCellValue('Ukuran Sepatu'),
+      ];
+
+      sheet.appendRow(header);
+
+      for (var i = 0; i < rows.length; i++) {
+        final row = rows[i];
+        final rawKontak = (row['kontak'] ?? '').toString();
+        final formattedKontak = _formatPhone(rawKontak);
+        sheet.appendRow(<xlsx.CellValue?>[
+          xlsx.TextCellValue((i + 1).toString()),
+          xlsx.TextCellValue((row['nrp'] ?? '').toString()),
+          xlsx.TextCellValue((row['name'] ?? '').toString()),
+          xlsx.TextCellValue((row['jabatan'] ?? '').toString()),
+          xlsx.TextCellValue((row['group'] ?? '').toString()),
+          xlsx.TextCellValue(formattedKontak),
+          xlsx.TextCellValue((row['ukuran_baju'] ?? '').toString()),
+          xlsx.TextCellValue((row['ukuran_celana'] ?? '').toString()),
+          xlsx.TextCellValue((row['ukuran_sepatu'] ?? '').toString()),
+        ]);
+      }
+
+      final bytes = Uint8List.fromList(excel.encode()!);
+      final fileName =
+          'data_pegawai_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+
+      if (kIsWeb) {
+        await triggerDownload(bytes, fileName);
+        showTopToast(
+          'File Excel diunduh melalui browser',
+          background: Colors.green,
+          foreground: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+        return;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/$fileName';
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      await OpenFilex.open(file.path);
+
+      showTopToast(
+        'File Excel tersimpan di ${file.path}',
+        background: Colors.green,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } catch (e) {
+      showTopToast(
+        'Gagal export data pegawai: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExportingPegawai = false;
+        });
+      }
+    }
+  }
+
+  String _formatPhone(String raw) {
+    var s = raw.trim();
+    if (s.isEmpty) return s;
+
+    s = s.replaceAll(RegExp(r'\s+'), '');
+    s = s.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (s.startsWith('00')) {
+      s = s.substring(2);
+    }
+
+    if (s.startsWith('62')) {
+      return s;
+    }
+
+    if (s.startsWith('0') && s.length > 1) {
+      return '62${s.substring(1)}';
+    }
+
+    if (s.startsWith('8')) {
+      return '62$s';
+    }
+
+    return s;
   }
 
   Future<int> _fetchTableCount(String table) async {
@@ -109,6 +233,13 @@ class _DataManagementPageState extends State<DataManagementPage> {
                   Icons.edit,
                   Colors.blue,
                   () => Get.toNamed('/edit-pegawai'),
+                ),
+                _buildActionCard(
+                  context,
+                  'Export Pegawai ke Excel',
+                  Icons.download,
+                  Colors.green,
+                  _exportPegawaiToExcel,
                 ),
               ],
             ),

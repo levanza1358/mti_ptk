@@ -6,11 +6,48 @@ class HomeController extends GetxController {
   final RxInt totalLembur = 0.obs;
   final RxInt totalPremi = 0.obs;
   final RxBool isLoading = false.obs;
+  final Rxn<Map<String, dynamic>> userDetail = Rxn<Map<String, dynamic>>();
+  final RxBool isUserDetailLoading = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     fetchAnnualSummary();
+    fetchUserDetail();
+  }
+
+  Future<void> fetchUserDetail() async {
+    try {
+      isUserDetailLoading.value = true;
+
+      if (!Get.isRegistered<LoginController>()) {
+        return;
+      }
+
+      final loginController = Get.find<LoginController>();
+      final user = loginController.currentUser.value;
+
+      if (user == null) {
+        return;
+      }
+
+      final userId = user['id'];
+      if (userId == null) {
+        return;
+      }
+
+      final result = await SupabaseService.instance.client
+          .from('users')
+          .select()
+          .eq('id', userId)
+          .single();
+
+      userDetail.value = Map<String, dynamic>.from(result as Map);
+    } catch (_) {
+      // ignore errors here, keep UI with basic info
+    } finally {
+      isUserDetailLoading.value = false;
+    }
   }
 
   Future<void> fetchAnnualSummary() async {
