@@ -52,7 +52,19 @@ class _SettingsPageState extends State<SettingsPage> {
           // User Info Section
           Container(
             padding: const EdgeInsets.all(16.0),
-            color: theme.cardColor,
+            decoration: BoxDecoration(
+              color: theme.cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.brightness == Brightness.dark
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.grey.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -92,13 +104,15 @@ class _SettingsPageState extends State<SettingsPage> {
                             Text(
                               'NRP: ${user?['nrp'] ?? '-'}',
                               style: TextStyle(
-                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.7),
                               ),
                             ),
                             Text(
                               'Jabatan: ${user?['jabatan'] ?? '-'}',
                               style: TextStyle(
-                                color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
+                                color: theme.textTheme.bodyMedium?.color
+                                    ?.withValues(alpha: 0.7),
                               ),
                             ),
                           ],
@@ -169,7 +183,8 @@ class _SettingsPageState extends State<SettingsPage> {
             subtitle: 'Kirim masukan atau laporkan masalah',
             trailing: const Icon(Icons.contact_support),
             onTap: () async {
-              const email = 'mailto:support@mti-ptk.com?subject=Masukan Aplikasi MTI PTK';
+              const email =
+                  'mailto:support@mti-ptk.com?subject=Masukan Aplikasi MTI PTK';
               if (await canLaunchUrl(Uri.parse(email))) {
                 await launchUrl(Uri.parse(email));
               } else {
@@ -286,12 +301,71 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    final color = Theme.of(context).colorScheme.primary;
+    final isAction = onTap != null;
+    final trailingWidget = trailing ??
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: color),
+          ),
+          child: Icon(Icons.chevron_right, color: color, size: 20),
+        );
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.grey.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.color
+                              ?.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                isAction ? trailingWidget : const SizedBox.shrink(),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

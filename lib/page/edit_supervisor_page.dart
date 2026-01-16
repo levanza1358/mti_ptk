@@ -343,9 +343,9 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                       color: isSelected
                           ? Theme.of(context).colorScheme.primaryContainer
                           : Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => _onSupervisorTapped(supervisor),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -378,11 +378,23 @@ class _EditSupervisorPageState extends State<EditSupervisorPage> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Icon(
-                                Icons.edit,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                              Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary),
+                                ),
+                                child: Icon(Icons.chevron_right,
+                                    color:
+                                        Theme.of(context).colorScheme.primary),
                               ),
                             ],
                           ),
