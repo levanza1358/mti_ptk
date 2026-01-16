@@ -175,8 +175,8 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              // Kalender Cuti
-              if (has('permissionAllCuti')) {
+              // Kalender Cuti (akses sama seperti pengajuan cuti)
+              if (has('permissionCuti')) {
                 menuItems.add(_buildMenuTile(
                   context,
                   'Kalender Cuti',
