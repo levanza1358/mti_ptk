@@ -194,8 +194,18 @@ class HomePage extends StatelessWidget {
 
               // Helper to check permission
               bool has(String key) => permissions[key] == true;
-
               final List<Widget> menuItems = [];
+
+              menuItems.add(_buildMenuTile(
+                context,
+                'Data Pribadi',
+                'Ubah nomor HP dan ukuran',
+                Icons.person,
+                Colors.blue,
+                () => Get.toNamed('/data-pribadi')?.then((_) {
+                  homeController.fetchUserDetail();
+                }),
+              ));
 
               if (has('permissionCuti')) {
                 menuItems.add(_buildMenuTile(
@@ -296,17 +306,6 @@ class HomePage extends StatelessWidget {
                 ));
               }
 
-              menuItems.add(_buildMenuTile(
-                context,
-                'Data Pribadi',
-                'Ubah nomor HP dan ukuran',
-                Icons.person,
-                Colors.blue,
-                () => Get.toNamed('/data-pribadi')?.then((_) {
-                  homeController.fetchUserDetail();
-                }),
-              ));
-
               // Settings - Always visible
               menuItems.add(_buildMenuTile(
                 context,
@@ -338,124 +337,180 @@ class HomePage extends StatelessWidget {
               final ukuranSepatu =
                   (userDetail['ukuran_sepatu'] ?? '-').toString();
 
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+
               return Container(
                 margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.black.withValues(alpha: 0.2)
-                          : Colors.grey.withValues(alpha: 0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [
+                            Colors.blueGrey.shade900,
+                            Colors.blueGrey.shade800,
+                          ]
+                        : [
+                            Colors.blue.shade50,
+                            Colors.blue.shade100,
+                          ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Data Pribadi',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color:
-                                Theme.of(context).textTheme.titleMedium?.color,
-                          ),
-                        ),
-                        TextButton.icon(
-                          onPressed: () =>
-                              Get.toNamed('/data-pribadi')?.then((_) {
-                            homeController.fetchUserDetail();
-                          }),
-                          icon: const Icon(Icons.edit, size: 18),
-                          label: const Text('Edit'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (isDetailLoading)
-                      const LinearProgressIndicator(minHeight: 2)
-                    else ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(Icons.phone, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Nomor HP / WA: $kontak',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.checkroom, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Ukuran Baju: $ukuranBaju',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.straighten, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Ukuran Celana: $ukuranCelana',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.directions_walk, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Ukuran Sepatu: $ukuranSepatu',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                child: Container(
+                  margin: const EdgeInsets.all(1.5),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : Colors.grey.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
-                  ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.blue.withValues(alpha: 0.12),
+                                ),
+                                child: const Icon(
+                                  Icons.person_outline,
+                                  size: 20,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Data Pribadi',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.color,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Pastikan data selalu terbaru',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color
+                                          ?.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          TextButton.icon(
+                            onPressed: () =>
+                                Get.toNamed('/data-pribadi')?.then((_) {
+                              homeController.fetchUserDetail();
+                            }),
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('Edit'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (isDetailLoading)
+                        const LinearProgressIndicator(minHeight: 2)
+                      else ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.phone, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Nomor HP / WA: $kontak',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.checkroom, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Ukuran Baju: $ukuranBaju',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.straighten, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Ukuran Celana: $ukuranCelana',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.directions_walk, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Ukuran Sepatu: $ukuranSepatu',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               );
             }),
