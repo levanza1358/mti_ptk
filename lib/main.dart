@@ -55,10 +55,28 @@ class MyApp extends StatelessWidget {
       title: 'PT Multi Terminal Indonesia LR 2 Area Pontianak',
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.blue,
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: Colors.blue.shade600,
+          onPrimary: Colors.white,
+          primaryContainer: Colors.blue.shade50,
+          onPrimaryContainer: Colors.blue.shade900,
+          secondary: Colors.pinkAccent.shade100,
+          onSecondary: Colors.white,
+          secondaryContainer: Colors.pink.shade50,
+          onSecondaryContainer: Colors.pink.shade900,
+          surface: const Color(0xFFF6F7FB),
+          onSurface: const Color(0xFF1B1E24),
+          surfaceContainerHighest: Colors.white,
+          onSurfaceVariant: Colors.grey.shade700,
+          outline: Colors.grey.shade300,
+          outlineVariant: Colors.grey.shade200,
+          shadow: Colors.black.withValues(alpha: 0.1),
+          inverseSurface: const Color(0xFF1B1E24),
+          onInverseSurface: Colors.white,
         ),
       ),
       darkTheme: ThemeData(
@@ -100,7 +118,7 @@ class MyApp extends StatelessWidget {
           surfaceTint: Colors.blue.shade300,
         ),
       ),
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.system,
       initialRoute: initialRoute,
       getPages: [
         GetPage(
