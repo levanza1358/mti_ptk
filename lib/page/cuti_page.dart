@@ -1058,10 +1058,15 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
     };
 
     final pdfController = Get.put(PdfCutiController());
+    final fileName = pdfController.generatePdfFileName({
+      'name': user['name'],
+      'nrp': user['nrp'],
+    });
 
     Get.to(() => PdfPreviewPage(
           title: 'Surat Cuti',
           pdfGenerator: () => pdfController.generateCutiPdf(pdfData),
+          fileName: fileName,
         ));
   }
 

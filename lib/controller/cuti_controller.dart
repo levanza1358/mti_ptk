@@ -868,10 +868,16 @@ class CutiController extends GetxController
     final year = selectedYear.value;
     filteredCutiHistory.value = cutiHistory.where((cuti) {
       try {
-        final tanggalPengajuan = cuti['tanggal_pengajuan'];
-        if (tanggalPengajuan == null) return false;
+        final raw = cuti['tanggal_pengajuan'];
+        if (raw == null) return false;
 
-        final date = DateTime.parse(tanggalPengajuan);
+        DateTime? date;
+        if (raw is DateTime) {
+          date = raw;
+        } else {
+          date = DateTime.tryParse(raw.toString());
+        }
+        if (date == null) return false;
         return date.year == year;
       } catch (e) {
         return false;
@@ -900,18 +906,13 @@ class CutiController extends GetxController
       final user = currentUser.value;
 
       if (user != null) {
-        final int year = selectedYear.value;
-        final DateTime start = DateTime(year, 1, 1);
-        final DateTime end = DateTime(year, 12, 31, 23, 59, 59);
-
         final result = await SupabaseService.instance.client
             .from('cuti')
             .select(
                 'id, users_id, nama, jenis_cuti, lama_cuti, list_tanggal_cuti, tanggal_pengajuan, alasan_cuti, sisa_cuti, url_ttd, kunci_cuti')
             .eq('users_id', user['id']) // Use foreign key instead of nama
-            .gte('tanggal_pengajuan', start.toIso8601String())
-            .lte('tanggal_pengajuan', end.toIso8601String())
-            .order('tanggal_pengajuan', ascending: false);
+            .order('tanggal_pengajuan', ascending: false)
+            .limit(400);
 
         cutiHistory.value = List<Map<String, dynamic>>.from(result);
 

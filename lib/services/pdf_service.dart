@@ -4,8 +4,43 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:printing/printing.dart';
+import 'dart:math';
 
 class PdfService {
+  static String _sanitizeFilename(String name) {
+    return name.replaceAll(RegExp(r'[^\w\s\.-]'), '');
+  }
+
+  static String _extractFirstName(String? fullName) {
+    final trimmed = (fullName ?? '').trim();
+    if (trimmed.isEmpty) return 'user';
+    final parts = trimmed.split(' ');
+    return parts.first;
+  }
+
+  static int _generateRandomFourDigits() {
+    return 1000 + Random().nextInt(9000);
+  }
+
+  static String generateCutiFileName(Map<String, dynamic> userData) {
+    final nama = userData['name']?.toString();
+    final nrp = (userData['nrp'] ?? '00000').toString();
+    final firstName = _sanitizeFilename(_extractFirstName(nama));
+    final nrpClean = _sanitizeFilename(nrp);
+    final randomNumber = _generateRandomFourDigits().toString();
+    return 'surat_cuti_${firstName}_${nrpClean}_$randomNumber.pdf';
+  }
+
+  static String generateEksepsiFileName(Map<String, dynamic> userData) {
+    final nama = userData['name']?.toString();
+    final nrp =
+        (userData['nrp'] ?? userData['nip'] ?? '00000').toString();
+    final firstName = _sanitizeFilename(_extractFirstName(nama));
+    final nrpClean = _sanitizeFilename(nrp);
+    final randomNumber = _generateRandomFourDigits().toString();
+    return 'surat_eksepsi_${firstName}_${nrpClean}_$randomNumber.pdf';
+  }
+
   static Future<Uint8List> generateLeavePdf({
     required String employeeName,
     required String leaveType,

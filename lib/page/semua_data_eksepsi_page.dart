@@ -602,10 +602,13 @@ class _SemuaDataEksepsiPageState extends State<SemuaDataEksepsiPage> {
         return;
       }
 
+      final fileName = PdfService.generateEksepsiFileName(user);
+
       Get.to(
         () => PdfPreviewPage(
           title: 'PDF Eksepsi - ${user['name'] ?? 'Unknown'}',
           pdfGenerator: () async => pdfData,
+          fileName: fileName,
         ),
       );
     } catch (e) {

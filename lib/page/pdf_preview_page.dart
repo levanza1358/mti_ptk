@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,11 +21,13 @@ import '../utils/top_toast.dart';
 class PdfPreviewPage extends StatefulWidget {
   final String title;
   final Future<Uint8List> Function() pdfGenerator;
+  final String? fileName;
 
   const PdfPreviewPage({
     super.key,
     required this.title,
     required this.pdfGenerator,
+    this.fileName,
   });
 
   @override
@@ -134,9 +137,14 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
                   scrollViewDecoration: const BoxDecoration(
                     color: Colors.grey,
                   ),
-                  pdfFileName: '${widget.title.replaceAll(' ', '_')}.pdf',
+                  pdfFileName: _resolveFileName(),
                 ),
     );
+  }
+
+  String _resolveFileName() {
+    final base = widget.fileName ?? widget.title.replaceAll(' ', '_');
+    return base.endsWith('.pdf') ? base : '$base.pdf';
   }
 
   void _downloadPdf() async {
@@ -145,7 +153,7 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
     try {
       await Printing.sharePdf(
         bytes: _pdfData!,
-        filename: '${widget.title.replaceAll(' ', '_')}.pdf',
+        filename: _resolveFileName(),
       );
       showTopToast(
         'PDF berhasil didownload',
@@ -187,7 +195,7 @@ class _PdfPreviewPageState extends State<PdfPreviewPage> {
     try {
       await Printing.sharePdf(
         bytes: _pdfData!,
-        filename: '${widget.title.replaceAll(' ', '_')}.pdf',
+        filename: _resolveFileName(),
       );
     } catch (e) {
       showTopToast(
@@ -211,11 +219,24 @@ class PdfCutiController extends GetxController {
     return name.replaceAll(RegExp(r'[^\w\s\.-]'), '');
   }
 
+  String extractFirstName(String? fullName) {
+    final trimmed = (fullName ?? '').trim();
+    if (trimmed.isEmpty) return 'user';
+    final parts = trimmed.split(' ');
+    return parts.first;
+  }
+
+  int generateRandomFourDigits() {
+    return 1000 + Random().nextInt(9000);
+  }
+
   String generatePdfFileName(Map<String, dynamic> userData) {
     final nrp = sanitizeFilename((userData['nrp'] ?? '00000').toString());
-    final randomNumber =
-        (10000 + (DateTime.now().millisecondsSinceEpoch % 90000)).toString();
-    return 'surat_cuti_${nrp}_$randomNumber.pdf';
+    final firstName = sanitizeFilename(
+      extractFirstName(userData['name']?.toString()),
+    );
+    final randomNumber = generateRandomFourDigits().toString();
+    return 'surat_cuti_${firstName}_${nrp}_$randomNumber.pdf';
   }
 
   Future<String> generatePdfFileNameFromCuti(
