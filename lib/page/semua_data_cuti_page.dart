@@ -839,16 +839,24 @@ class _SemuaDataCutiPageState extends State<SemuaDataCutiPage>
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: badgeColor.withValues(alpha: 0.1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: badgeColor),
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(32),
+                                    onTap: () => _deleteCuti(item),
+                                    child: Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.red.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.red),
+                                      ),
+                                      child: const Icon(Icons.delete_outline,
+                                          color: Colors.red, size: 18),
+                                    ),
                                   ),
-                                  child: Icon(Icons.chevron_right,
-                                      color: badgeColor, size: 20),
                                 ),
                               ],
                             ),
@@ -861,6 +869,85 @@ class _SemuaDataCutiPageState extends State<SemuaDataCutiPage>
         ),
       ],
     );
+  }
+
+  Future<void> _deleteCuti(Map<String, dynamic> cutiData) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Cuti'),
+        content: const Text(
+            'Apakah Anda yakin ingin menghapus data cuti ini? Tindakan ini tidak dapat dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final cutiId = cutiData['id'];
+      final userId = cutiData['users_id'];
+      final jenisCuti = (cutiData['jenis_cuti'] ?? '').toString();
+      final listTanggal = (cutiData['list_tanggal_cuti'] ?? '').toString();
+      final dates = listTanggal.isNotEmpty ? listTanggal.split(',') : [];
+      final daysToRestore = dates.length;
+
+      // 1. Delete the cuti record
+      await SupabaseService.instance.client
+          .from('cuti')
+          .delete()
+          .eq('id', cutiId);
+
+      // 2. Only restore leave balance for annual leave
+      // Check if it is annual leave (case insensitive check just to be safe, but typically it is uppercase)
+      if (jenisCuti.toUpperCase().contains('TAHUN') && daysToRestore > 0) {
+        // Get current user's leave balance
+        final userResult = await SupabaseService.instance.client
+            .from('users')
+            .select('sisa_cuti')
+            .eq('id', userId)
+            .single();
+
+        final currentBalance = userResult['sisa_cuti'] ?? 0;
+        final newBalance = currentBalance + daysToRestore;
+
+        // Update user's leave balance
+        await SupabaseService.instance.client
+            .from('users')
+            .update({'sisa_cuti': newBalance}).eq('id', userId);
+      }
+
+      // 3. Refresh data
+      _loadLeaveData();
+      _loadHistoryData();
+
+      // Navigator.pop(context); // REMOVED: No longer needed as we are not in a detail sheet
+
+      showTopToast(
+        'Data cuti berhasil dihapus${jenisCuti.toUpperCase().contains('TAHUN') ? ' dan kuota dikembalikan' : ''}',
+        background: Colors.green,
+        foreground: Colors.white,
+      );
+    } catch (e) {
+      showTopToast(
+        'Gagal menghapus data cuti: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+      );
+    }
   }
 
   void _showCutiDetailSheet(Map<String, dynamic> item) {
@@ -1012,6 +1099,7 @@ class _SemuaDataCutiPageState extends State<SemuaDataCutiPage>
                     const SizedBox(height: 10),
                     Text(alasan),
                   ],
+                  const SizedBox(height: 30),
                 ],
               ),
             ),

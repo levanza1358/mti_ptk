@@ -104,6 +104,8 @@ class LoginController extends GetxController {
           duration: const Duration(seconds: 3),
         );
       } else {
+        // Ensure UI update happens
+        await Future.delayed(Duration.zero);
         showTopToast(
           'NRP atau password salah',
           background: Colors.red,

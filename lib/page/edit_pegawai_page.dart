@@ -15,6 +15,7 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
   final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _sisaCutiController = TextEditingController();
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -40,12 +41,13 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
     _nameController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
+    _sisaCutiController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   Future<List<Map<String, dynamic>>> _fetchEmployeesWithOptionalPhone() async {
-    const baseColumns = 'id, nrp, name, jabatan, "group"';
+    const baseColumns = 'id, nrp, name, jabatan, "group", sisa_cuti';
     const phoneCandidates = <String>[
       'kontak',
       'telepon',
@@ -163,6 +165,7 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
       _nameController.text = employee['name'] ?? '';
       _passwordController.clear();
       _phoneController.text = phoneValue ?? '';
+      _sisaCutiController.text = (employee['sisa_cuti'] ?? '12').toString();
       _selectedGroup = normalizedGroup;
       _selectedJabatan = normalizedJabatan;
     });
@@ -176,6 +179,7 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
       _nameController.clear();
       _passwordController.clear();
       _phoneController.clear();
+      _sisaCutiController.clear();
       _selectedGroup = null;
       _selectedJabatan = null;
     });
@@ -281,6 +285,25 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                       ),
                     ],
                     const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _sisaCutiController,
+                      decoration: const InputDecoration(
+                        labelText: 'Sisa Kuota Cuti',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.calendar_today),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Sisa cuti tidak boleh kosong';
+                        }
+                        if (int.tryParse(value) == null) {
+                          return 'Harus berupa angka';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedGroup,
                       decoration: const InputDecoration(
@@ -355,6 +378,27 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                final currentEmployee = _employees
+                                    .firstWhere((e) => e['id'] == employeeId);
+                                Navigator.pop(context); // close sheet first
+                                await _deletePegawai(currentEmployee);
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.delete_forever),
+                        label: const Text('Hapus Pegawai Permanen'),
+                      ),
                     ),
                   ],
                 ),
@@ -493,21 +537,10 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color:
-                                        Theme.of(context).colorScheme.primary),
-                              ),
-                              child: Icon(Icons.chevron_right,
-                                  color: Theme.of(context).colorScheme.primary),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deletePegawai(employee),
+                              tooltip: 'Hapus Pegawai',
                             ),
                           ],
                         ),
@@ -520,6 +553,54 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _deletePegawai(Map<String, dynamic> employee) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Pegawai'),
+        content: Text(
+            'Apakah Anda yakin ingin menghapus pegawai ${employee['name']}? Tindakan ini tidak dapat dibatalkan.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      await SupabaseService.instance.client
+          .from('users')
+          .delete()
+          .eq('id', employee['id']);
+
+      showTopToast(
+        'Pegawai berhasil dihapus',
+        background: Colors.green,
+        foreground: Colors.white,
+      );
+
+      _loadInitialData();
+    } catch (e) {
+      showTopToast(
+        'Gagal menghapus pegawai: $e',
+        background: Colors.red,
+        foreground: Colors.white,
+      );
+    }
   }
 
   Future<void> _submitForm({
@@ -549,6 +630,7 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
         'name': _nameController.text.trim(),
         'jabatan': _selectedJabatan,
         'group': _selectedGroup,
+        'sisa_cuti': int.tryParse(_sisaCutiController.text) ?? 0,
       };
 
       // Only update password if provided
@@ -574,6 +656,7 @@ class _EditPegawaiPageState extends State<EditPegawaiPage> {
             'name': updateData['name'],
             'jabatan': updateData['jabatan'],
             'group': updateData['group'],
+            'sisa_cuti': updateData['sisa_cuti'],
             if (_phoneColumn != null) _phoneColumn!: updateData[_phoneColumn!],
           };
         }
