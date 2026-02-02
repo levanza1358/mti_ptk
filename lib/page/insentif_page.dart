@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../controller/login_controller.dart';
 import '../services/supabase_service.dart';
+import '../config/page_colors.dart';
 
 class InsentifPage extends StatefulWidget {
   const InsentifPage({super.key});
@@ -41,6 +42,19 @@ class _InsentifPageState extends State<InsentifPage>
         title: const Text('Insentif'),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.insentifDark : PageColors.insentifLight,
+                (isDark ? PageColors.insentifDark : PageColors.insentifLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

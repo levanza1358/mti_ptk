@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/login_controller.dart';
+import '../controller/theme_controller.dart';
+import '../config/page_colors.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,7 +15,11 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final LoginController loginController = Get.find<LoginController>();
+    final ThemeController themeController = Get.find<ThemeController>();
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final pageColor =
+        isDark ? PageColors.settingsLight : PageColors.settingsDark;
 
     return Scaffold(
       appBar: AppBar(
@@ -23,8 +29,18 @@ class _SettingsPageState extends State<SettingsPage> {
           tooltip: 'Kembali ke Beranda',
         ),
         title: const Text('Pengaturan'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [pageColor, pageColor.withValues(alpha: 0.8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
           // User Info Section
           Container(
@@ -32,15 +48,17 @@ class _SettingsPageState extends State<SettingsPage> {
             decoration: BoxDecoration(
               color: theme.cardColor,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.brightness == Brightness.dark
-                      ? Colors.black.withValues(alpha: 0.2)
-                      : Colors.grey.withValues(alpha: 0.06),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              ),
+              gradient: LinearGradient(
+                colors: [
+                  pageColor.withValues(alpha: 0.03),
+                  Colors.transparent,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +74,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: theme.primaryColor,
+                        backgroundColor: pageColor,
                         child: Text(
                           (user?['name'] ?? 'U')[0].toUpperCase(),
                           style: const TextStyle(
@@ -101,6 +119,23 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+
+          const SizedBox(height: 24),
+
+          // Appearance Section
+          const _SectionHeader(title: 'Tampilan'),
+          Obx(() => _SettingsTile(
+                title: 'Dark Mode',
+                subtitle: themeController.isDarkMode.value
+                    ? 'Tema gelap aktif'
+                    : 'Tema terang aktif',
+                trailing: Switch(
+                  value: themeController.isDarkMode.value,
+                  onChanged: (_) => themeController.toggleTheme(),
+                  activeTrackColor: pageColor,
+                ),
+                onTap: () => themeController.toggleTheme(),
+              )),
 
           const SizedBox(height: 16),
 

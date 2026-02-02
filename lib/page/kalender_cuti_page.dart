@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../controller/login_controller.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
 
@@ -1290,6 +1291,19 @@ class _KalenderCutiPageState extends State<KalenderCutiPage>
             style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.cutiDark : PageColors.cutiLight,
+                (isDark ? PageColors.cutiDark : PageColors.cutiLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

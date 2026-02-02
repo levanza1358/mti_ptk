@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../controller/cuti_controller.dart';
+import '../config/page_colors.dart';
 import 'pdf_preview_page.dart';
 import '../utils/top_toast.dart';
 import '../services/supabase_service.dart';
@@ -52,6 +53,19 @@ class _CutiPageState extends State<CutiPage> with TickerProviderStateMixin {
             const Text('Cuti', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.cutiDark : PageColors.cutiLight,
+                (isDark ? PageColors.cutiDark : PageColors.cutiLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

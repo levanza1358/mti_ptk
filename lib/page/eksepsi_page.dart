@@ -7,6 +7,7 @@ import '../services/supabase_service.dart';
 import '../services/pdf_service.dart';
 import '../controller/login_controller.dart';
 import '../controller/eksepsi_controller.dart';
+import '../config/page_colors.dart';
 import 'pdf_preview_page.dart';
 import '../utils/top_toast.dart';
 
@@ -64,6 +65,19 @@ class _EksepsiPageState extends State<EksepsiPage>
         ),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.eksepsiDark : PageColors.eksepsiLight,
+                (isDark ? PageColors.eksepsiDark : PageColors.eksepsiLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(

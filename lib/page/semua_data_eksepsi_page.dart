@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../services/pdf_service.dart';
 import 'pdf_preview_page.dart';
@@ -43,6 +44,19 @@ class _SemuaDataEksepsiPageState extends State<SemuaDataEksepsiPage> {
             'Eksepsi - ${DateFormat('MMMM yyyy', 'id_ID').format(_historyMonth)}'),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.eksepsiDark : PageColors.eksepsiLight,
+                (isDark ? PageColors.eksepsiDark : PageColors.eksepsiLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controller/login_controller.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
 
@@ -210,6 +211,7 @@ class _DataPribadiPageState extends State<DataPribadiPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -224,6 +226,23 @@ class _DataPribadiPageState extends State<DataPribadiPage> {
           tooltip: 'Kembali',
         ),
         title: const Text('Data Pribadi'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark
+                    ? PageColors.dataPribadiDark
+                    : PageColors.dataPribadiLight,
+                (isDark
+                        ? PageColors.dataPribadiDark
+                        : PageColors.dataPribadiLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../controller/cuti_controller.dart';
 import '../controller/login_controller.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
 
@@ -46,6 +47,7 @@ class _SuratKeluarPageState extends State<SuratKeluarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -54,6 +56,23 @@ class _SuratKeluarPageState extends State<SuratKeluarPage> {
           tooltip: 'Kembali ke Beranda',
         ),
         title: const Text('Surat Keluar'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark
+                    ? PageColors.suratKeluarDark
+                    : PageColors.suratKeluarLight,
+                (isDark
+                        ? PageColors.suratKeluarDark
+                        : PageColors.suratKeluarLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: _showForm ? _buildAddForm() : _buildList(),
       floatingActionButton: FloatingActionButton(

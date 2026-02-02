@@ -8,6 +8,7 @@ import 'package:excel/excel.dart' as xlsx;
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import '../services/supabase_service.dart';
+import '../config/page_colors.dart';
 import '../utils/top_toast.dart';
 import '../utils/web_download.dart';
 
@@ -182,6 +183,7 @@ class _DataManagementPageState extends State<DataManagementPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -196,6 +198,23 @@ class _DataManagementPageState extends State<DataManagementPage> {
           tooltip: 'Kembali',
         ),
         title: const Text('Data Management'),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark
+                    ? PageColors.dataManagementDark
+                    : PageColors.dataManagementLight,
+                (isDark
+                        ? PageColors.dataManagementDark
+                        : PageColors.dataManagementLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

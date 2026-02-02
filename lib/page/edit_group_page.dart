@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
 
@@ -207,6 +208,7 @@ class _EditGroupPageState extends State<EditGroupPage> {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -215,6 +217,24 @@ class _EditGroupPageState extends State<EditGroupPage> {
           tooltip: 'Kembali',
         ),
         title: const Text('Edit Grup'),
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark
+                    ? PageColors.dataManagementDark
+                    : PageColors.dataManagementLight,
+                (isDark
+                        ? PageColors.dataManagementDark
+                        : PageColors.dataManagementLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: CustomScrollView(
         slivers: [

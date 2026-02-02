@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' as xlsx;
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import '../config/page_colors.dart';
 import '../services/supabase_service.dart';
 import '../utils/top_toast.dart';
 
@@ -87,6 +88,19 @@ class _SemuaDataInsentifPageState extends State<SemuaDataInsentifPage>
         title: const Text('Semua Data Insentif'),
         centerTitle: true,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                isDark ? PageColors.insentifDark : PageColors.insentifLight,
+                (isDark ? PageColors.insentifDark : PageColors.insentifLight)
+                    .withValues(alpha: 0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
