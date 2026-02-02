@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/supabase_service.dart';
 import '../services/pdf_service.dart';
 import '../controller/login_controller.dart';
+import '../controller/eksepsi_controller.dart';
 import 'pdf_preview_page.dart';
 import '../utils/top_toast.dart';
 
@@ -26,6 +28,7 @@ class _EksepsiPageState extends State<EksepsiPage>
   int _selectedYear = DateTime.now().year;
 
   final TextEditingController _reasonController = TextEditingController();
+  final EksepsiController _eksepsiController = Get.put(EksepsiController());
 
   @override
   void initState() {
@@ -221,6 +224,128 @@ class _EksepsiPageState extends State<EksepsiPage>
                       return null;
                     },
                   ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Signature Section
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Tanda Tangan Digital',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Tanda tangan akan muncul di dokumen PDF eksepsi',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  Obx(() {
+                    final hasSignature = _eksepsiController.hasSignature.value;
+                    final url = _eksepsiController.signatureUrl.value;
+
+                    if (!hasSignature || url.isEmpty) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _eksepsiController.showSignatureDialog,
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Buat Tanda Tangan'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                            side: const BorderSide(color: Colors.orange),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white,
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              url,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(Icons.error_outline,
+                                      color: Colors.red),
+                                );
+                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  _eksepsiController.clearSignature();
+                                },
+                                icon: const Icon(Icons.delete_outline),
+                                label: const Text('Hapus'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                  side: const BorderSide(color: Colors.red),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed:
+                                    _eksepsiController.showSignatureDialog,
+                                icon: const Icon(Icons.edit),
+                                label: const Text('Ubah'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.orange,
+                                  side: const BorderSide(color: Colors.orange),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  }),
                 ],
               ),
             ),
@@ -652,6 +777,17 @@ class _EksepsiPageState extends State<EksepsiPage>
       return;
     }
 
+    if (!_eksepsiController.hasSignature.value ||
+        _eksepsiController.signatureUrl.value.isEmpty) {
+      showTopToast(
+        'Tanda tangan wajib diisi sebelum mengajukan eksepsi',
+        background: Colors.red,
+        foreground: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+      return;
+    }
+
     await _submitEksepsiToSupabase();
   }
 
@@ -673,11 +809,13 @@ class _EksepsiPageState extends State<EksepsiPage>
       final userId = currentUser['id'];
       final nowIso = DateTime.now().toIso8601String();
       final jenis = 'Jam Masuk & Jam Pulang';
+      final ttdUrl = _eksepsiController.signatureUrl.value;
 
       final eksepsiInsert = {
         'user_id': userId,
         'jenis_eksepsi': jenis,
         'tanggal_pengajuan': nowIso,
+        if (ttdUrl.isNotEmpty) 'url_ttd_eksepsi': ttdUrl,
       };
 
       final insertedParent = await SupabaseService.instance.client
@@ -729,6 +867,9 @@ class _EksepsiPageState extends State<EksepsiPage>
         _selectedDates.clear();
         _reasonController.clear();
       });
+
+      // Clear signature after successful submission
+      _eksepsiController.clearSignature();
 
       _tabController.animateTo(1);
     } catch (e) {
@@ -939,11 +1080,18 @@ class _EksepsiPageState extends State<EksepsiPage>
       final supervisorData = await _fetchSupervisorByJenis(supervisorJenis);
       final managerData = await _fetchSupervisorByJenis('Manager_PDS');
 
+      // Try to get signature bytes if available from controller
+      Uint8List? signatureBytes;
+      if (_eksepsiController.signatureData.value != null) {
+        signatureBytes = _eksepsiController.signatureData.value;
+      }
+
       final pdfData = await PdfService.generateEksepsiPdf(
         eksepsiData: eksepsiData,
         userData: userForPdf,
         supervisorData: supervisorData,
         managerData: managerData,
+        signatureBytes: signatureBytes,
       );
 
       if (pdfData.isEmpty) {
