@@ -1,13 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
   static SupabaseService get instance => _instance ??= SupabaseService._();
 
+  @visibleForTesting
+  static set instance(SupabaseService value) => _instance = value;
+
   SupabaseService._();
 
-  SupabaseClient get client => Supabase.instance.client;
+  SupabaseClient? _mockClient;
+
+  @visibleForTesting
+  set mockClient(SupabaseClient client) => _mockClient = client;
+
+  SupabaseClient get client => _mockClient ?? Supabase.instance.client;
 
   // Initialize Supabase
   static Future<void> initialize() async {
